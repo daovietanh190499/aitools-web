@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=utf-8 />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tạo ảnh thẻ - Công cụ trí tuệ nhân tạo</title>
+  <meta name="description" content="Nhận lập trình tools trí tuệ nhân tạo, tools tự động, xử lý ảnh, xử lý ngôn ngữ. Nhận chạy, huấn luyện mô hình học sâu">
+
+  <link rel="stylesheet" href="https://code.getmdl.io/1.1.3/material.orange-indigo.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <script defer src="https://code.getmdl.io/1.1.3/material.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700">
+
+  <link rel="icon" href="icon.png">
+
+  <link rel="stylesheet" href="main.css">
+
+  <script src="https://www.gstatic.com/firebasejs/7.15.5/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.15.5/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.15.5/firebase-firestore.js"></script>
+
+  <script type="text/javascript">
+
+    var endpoint = 'http://123.16.55.212:58/'
+    // var endpoint = 'http://10.1.12.202:58/'
+
+    function makeid(length) {
+        var result           = '';
+        var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var charactersLength = characters.length;
+        for ( var i = 0; i < length; i++ ) {
+          result += characters.charAt(Math.floor(Math.random() * 
+    charactersLength));
+      }
+      return result;
+    }
+
+    function toggleClick(id1, ids) {
+      for (id in ids) {
+        document.getElementById(ids[id]).disabled = !document.getElementById(id1).checked
+      }
+    }
+
+    function toggleChange(id1, id2) {
+      d = document.getElementById(id1).value;
+      document.getElementById(id2).value = d;
+      process_image(false)
+    }
+
+    function toggleRemove(id) {
+      let body = document.getElementById("spec_body")
+      let ele = document.getElementById(id)
+      body.removeChild(ele)
+    }
+
+    function toggleAdd() {
+      let arr = document.getElementById("spec_body").innerHTML.split("<tr>")
+      arr.pop()
+      let new_html = arr.join("<tr>")
+      let id = makeid(6)
+      document.getElementById("spec_body").innerHTML = new_html + `
+        <tr id="${id}">
+          <td><input type="number" id="quantity" name="quantity" value="40" min="1" max="1000"></td>
+          <td><input type="number" id="quantity" name="quantity" value="60" min="1" max="1000"></td>
+          <td><input type="number" id="quantity" name="quantity" value="35" min="1" max="1000" onchange="process_image(false)"></td>
+          <td><input type="number" id="quantity" name="quantity" value="4" min="1" max="1000" onchange="process_image(false)"></td>
+          <td><input type="number" id="quantity" name="quantity" value="4" min="1" max="1000"></td>
+          <td class="remove_button" onclick="toggleRemove('${id}')">
+              <i class="material-icons" style="font-weight: bold; text-align: center;">remove</i>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="6" style="cursor: pointer; text-align: center;" onclick="toggleAdd()">
+            <i class="material-icons" style="font-weight: bold;">add</i>
+          </td>
+        </tr>
+      `
+    }
+
+    function tableToJson(table) { 
+      var data = [];
+      for (var i=2; i<table.rows.length-1; i++) { 
+          var tableRow = table.rows[i]; 
+          var rowData = []; 
+          for (var j=0; j<tableRow.cells.length-1; j++) { 
+              rowData.push(parseFloat(tableRow.cells[j].firstChild.value));
+          }
+          let c = rowData[2]
+          rowData[2] = rowData[3]
+          rowData[3] = c
+          data.push(rowData);
+      } 
+      return data; 
+    }
+
+    function print_full_image(uid, filename, idToken) {
+      return fetch(endpoint + `download/${uid}/${filename}`, {
+          method: 'GET',
+          headers: {
+              'Content-Type': 'application/json',
+              'token': idToken
+          }
+      })
+      .then(res => res.blob())
+      .then(blob => {
+        url = URL.createObjectURL(blob)
+        var W = window.open(url);
+        W.window.print();
+      })
+    }
+
+    function download_full_image(uid, filename, idToken) {
+      return fetch(endpoint + `download/${uid}/${filename}`, {
+          method: 'GET',
+          headers: {
+              'Content-Type': 'application/json',
+              'token': idToken
+          }
+      })
+      .then(res => res.blob())
+      .then(blob => {
+        var a = document. createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = uid + '_' + filename + ".jpg";
+        a.click();
+      })
+    }
+
+    function download_image(uid, filename, idToken, ele_id) {
+      return fetch(endpoint + `download/idimage/${uid}/${filename}`, {
+          method: 'GET',
+          headers: {
+              'Content-Type': 'application/json',
+              'token': idToken
+          }
+      })
+      .then(res => res.blob())
+      .then(blob => {
+          document.getElementById(ele_id).src = URL.createObjectURL(blob);
+      })
+      .catch(e => {
+          document.getElementById(ele_id).src = 'upload.png'
+      });
+    }
+
+    function pad(num, size) {
+      num = num.toString();
+      while (num.length < size) num = "0" + num;
+      return num;
+    }
+
+    function string2node(str) {
+      const placeholder = document.createElement("div");
+      placeholder.innerHTML = str;
+      return node = placeholder.firstElementChild;
+    }
+
+    function process_image(is_generate) {
+      let uid = window.localStorage.getItem('uid');
+      firebase.auth().currentUser.getIdToken(true).then(function(idToken) {
+        data = getAllData(is_generate)
+        let spinner = is_generate ? "downloading" : "uploading"
+        document.getElementById(spinner).style.setProperty("display", "flex");
+        fetch(endpoint + 'idimage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'token': idToken
+          },
+          body: JSON.stringify(data)
+        }).then( async response => {
+          if(!is_generate)
+            await download_image(uid, 'preview', idToken, 'preview')
+          document.getElementById(spinner).style.setProperty("display", "none");
+          return response.json()
+        }).then(res => {
+          if(is_generate) {
+            document.getElementById("preview_download").innerHTML = ""
+            for (i = 0; i < res['result']['num_img']; i ++) {
+              let idimg = pad(i, 2)
+              node = string2node(`
+                <div class="mdl-cell mdl-cell--4-col mdl-cell--4-col-tablet mdl-cell--4-col-desktop">
+                  <div style="position:relative">
+                    <img id="${idimg}" style="width: 100%">
+                    <div class="cover_image">
+                      <i class="material-icons" onclick="download_full_image('${uid}','${idimg}','${idToken}')">cloud_download</i>
+                      <i class="material-icons" onclick="print_full_image('${uid}','${idimg}','${idToken}')">print</i>
+                    </div>
+                  </div>
+                </div>
+              `)
+              document.getElementById("preview_download").appendChild(node)
+              download_image(uid, `${idimg}_preview`, idToken, idimg)
+            }
+          }
+        })
+      })
+    }
+
+    function upload() {
+      let uid = window.localStorage.getItem('uid');
+      firebase.auth().currentUser.getIdToken(true).then(function(idToken) {
+        document.getElementById("uploading").style.setProperty("display", "flex");
+        file = document.getElementById('imgupload').files[0];
+        var data = new FormData()
+        data.append('file', file)
+        fetch(endpoint + 'upload', {
+          method: 'POST',
+          headers: {
+            'token': idToken
+          },
+          body: data
+        }).then(
+          async response => {
+            await download_image(uid, 'preview', idToken, 'preview')
+            document.getElementById("uploading").style.setProperty("display", "none");
+            return response.json()
+        })
+      })
+    }
+
+    function getAllData(is_generate = false) {
+      let papers = {"Letter": [215.9, 279.4], "A4": [210, 297], "A5": [148,210], "A6": [105, 148]}
+      let spec = tableToJson(document.getElementById('spec'))
+      let is_white_balance = document.getElementById("is_white_balance").checked
+      let is_smooth_face = document.getElementById("is_smooth").checked
+      let is_rotate = document.getElementById("is_rotate").checked
+      let size = parseInt(document.getElementById("size").value)
+      let sigma = parseInt(document.getElementById("sigma").value)
+      let paper = document.getElementById("paper").value
+      let paper_width = papers[paper][0]
+      let paper_height = papers[paper][1]
+      return {
+        "img_spec": spec,
+        "paper_width": paper_width,
+        "paper_height": paper_height,
+        "is_rotate": is_rotate,
+        "is_white_balance": is_white_balance,
+        "is_smooth_face": is_smooth_face,
+        "size": size,
+        "sigma": sigma,
+        "is_generate": is_generate
+      }
+    }
+
+    function toggleSignIn() {
+      if (!firebase.auth().currentUser) {
+        var provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/plus.login');
+        firebase.auth().signInWithRedirect(provider);
+      } else {
+        firebase.auth().signOut();
+      }
+      document.getElementById('quickstart-sign-in').disabled = true;
+    }
+
+    function initApp() {
+      firebase.auth().getRedirectResult().then(function(result) {
+        var user = result.user;
+      }).catch(function(error) {
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        var email = error.email;
+        var credential = error.credential;
+        if (errorCode === 'auth/account-exists-with-different-credential') {
+          alert('You have already signed up with a different auth provider for that email.');
+        } else {
+          console.error(error);
+        }
+      });
+
+      firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+        
+          var displayName = user.displayName;
+          var email = user.email;
+          var emailVerified = user.emailVerified;
+          var photoURL = user.photoURL;
+          var isAnonymous = user.isAnonymous;
+          var uid = user.uid;
+          var providerData = user.providerData;
+
+          window.localStorage.setItem('uid', uid)
+
+          firebase.auth().currentUser.getIdToken(true).then(function(idToken) {
+            fetch(endpoint + "check_token", {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'token': idToken
+            }})
+            .then(res => res.json())
+            .then(res => {
+                if('result' in res) {
+                  const d = new Date();
+                  let ms = res['result']['exp'] - d.getTime()
+                  let second = Math.floor(ms/1000)
+                  let minute = Math.floor(second/60)
+                  let hour = Math.floor(minute/60)
+                  second = second - minute*60
+                  minute = minute - hour*60
+                  document.getElementById('quickstart-account-status').innerHTML = `<span class="mdl-color-text--green" style="font-weight: bold;">Đã kích hoạt, </span> bạn còn <span class="mdl-color-text--orange"> ${hour} tiếng, ${minute} phút, ${second} giây </span>`
+                } else {
+                  document.getElementById('quickstart-account-status').innerHTML = `<span class="mdl-color-text--red" style="font-weight: bold;"> Chưa kích hoạt </span>`
+                }
+            })
+          })
+          
+          document.getElementById('quickstart-sign-in-status').textContent = 'Đã đăng nhập';
+          document.getElementById('quickstart-sign-in-status').className = 'mdl-color-text--green';
+          document.getElementById('quickstart-sign-in').textContent = 'Đăng xuất';
+          document.getElementById('greeting').innerHTML = "Chào mừng <span style='font-weight: bold;'>" + displayName + ', ' + email + "</span> đến với dịch vụ của AITOOLS"
+        } else {
+          
+          document.getElementById('quickstart-sign-in-status').textContent = 'Chưa đăng nhập';
+          document.getElementById('quickstart-sign-in-status').className = 'mdl-color-text--red';
+          document.getElementById('quickstart-sign-in').textContent = 'Đăng nhập với Google';
+        }
+        document.getElementById('quickstart-sign-in').disabled = false;
+      });
+
+      document.getElementById('quickstart-sign-in').addEventListener('click', toggleSignIn, false);
+    }
+
+    window.onload = function() {
+        document.getElementById('preview').addEventListener("click", () => {document.getElementById('imgupload').click()});
+        const firebaseConfig = {
+            apiKey: "AIzaSyCynoDMon4AwPfXydFRsrgYo57u74gPyNY",
+            authDomain: "aitools-5b0dd.firebaseapp.com",
+            projectId: "aitools-5b0dd",
+            storageBucket: "aitools-5b0dd.appspot.com",
+            messagingSenderId: "145113465700",
+            appId: "1:145113465700:web:7f0250d0d45e22a7d33071",
+            measurementId: "G-3XWTP481V6"
+        };
+        firebase.initializeApp(firebaseConfig);
+        initApp()
+    };
+  </script>
+</head>
+<body>
+<div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
+
+  <main class="mdl-layout__content mdl-color--grey-100">
+     <!-- Header section containing title -->
+    <header class="mdl-layout__header mdl-color-text--white mdl-color--light-blue-700">
+      <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+        <div class="mdl-layout__header-row mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--8-col-desktop">
+          <a href="/"><h3 style="font-size: xx-large; font-weight: 700; font-family: 'Open Sans', 'Helvetica', sans-serif">AITOOLS - CÔNG CỤ TRÍ TUỆ NHÂN TẠO</h3></a>
+        </div>
+      </div>
+    </header>
+
+    <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+
+      <!-- Container for the demo -->
+      <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+        <div class="mdl-card__title mdl-color--light-blue-600 mdl-color-text--white">
+          <h2 class="mdl-card__title-text">Dịch vụ xử lý ảnh thẻ - idimage</h2>
+        </div>
+        <div class="mdl-card__supporting-text mdl-color-text--grey-600">
+          <p>Đăng nhập hoặc đăng xuất bằng tài khoản Google của bạn bên dưới</p>
+
+          <!-- Button that handles sign-in/sign-out -->
+          <button disabled class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-sign-in">Đăng nhập với Google</button>
+
+          <!-- Container where we'll display the user details -->
+          <div class="quickstart-user-details-container">
+            Trạng thái đăng nhập: <span id="quickstart-sign-in-status" class="mdl-color-text--red">Chưa đăng nhập</span>
+            <div>Trạng thái tài khoản: <span id="quickstart-account-status">Không xác định</span></div>
+            <div id="greeting"></div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+        <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+        <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" style="height: 100%; width: 100%;" id="spec">
+          <thead>
+            <tr>
+              <th colspan="6" style="text-align: center;">Nhập kích thước ảnh (3x4, 4x6, 9x12, ...)</th>
+            </tr>
+            <tr>
+              <th class="mdl-data-table__cell--non-numeric">Chiều rộng(mm)</th>
+              <th>Chiều dài(mm)</th>
+              <th>Độ dài mặt(mm, ~chiều rộng)</th>
+              <th>Đỉnh đầu đến đỉnh ảnh(mm, ~1/10 mặt)</th>
+              <th>Số lượng</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="spec_body">
+            <tr id="0_spec">
+              <td><input type="number" id="quantity" name="quantity" value="30" min="1" max="1000"></td>
+              <td><input type="number" id="quantity" name="quantity" value="40" min="1" max="1000"></td>
+              <td><input type="number" id="quantity" name="quantity" value="25" min="1" max="1000" oninput="process_image(false)"></td>
+              <td><input type="number" id="quantity" name="quantity" value="3" min="1" max="1000" oninput="process_image(false)"></td>
+              <td><input type="number" id="quantity" name="quantity" value="8" min="1" max="1000"></td>
+              <td class="remove_button" onclick="toggleRemove('0_spec')">
+                  <i class="material-icons" style="font-weight: bold; text-align: center;">remove</i>
+              </td>
+            </tr>
+            <tr id="1_spec">
+              <td><input type="number" id="quantity" name="quantity" value="40" min="1" max="1000"></td>
+              <td><input type="number" id="quantity" name="quantity" value="60" min="1" max="1000"></td>
+              <td><input type="number" id="quantity" name="quantity" value="35" min="1" max="1000" oninput="process_image(false)"></td>
+              <td><input type="number" id="quantity" name="quantity" value="4" min="1" max="1000" oninput="process_image(false)"></td>
+              <td><input type="number" id="quantity" name="quantity" value="6" min="1" max="1000"></td>
+              <td class="remove_button" onclick="toggleRemove('1_spec')">
+                  <i class="material-icons" style="font-weight: bold; text-align: center;">remove</i>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="6" style="cursor: pointer; text-align: center;" onclick="toggleAdd()">
+                <i class="material-icons" style="font-weight: bold;">add</i>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+
+      <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+        <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--3-col mdl-cell--12-col-tablet mdl-cell--3-col-desktop" style="cursor: pointer">
+            <div class="container34">
+                <div id="uploading"
+                  style="width:100%; height:100%; display:none; justify-content:center; align-items:center; z-index:1000; position:absolute; top: 0; background-color: rgba(0, 0, 0, 0.5);">
+                  <div class="mdl-spinner mdl-spinner--single-color mdl-js-spinner is-active"></div>
+                </div>
+                <img id="preview" src="upload.png" title="bấm vào đây để upload ảnh">
+                <input type="file" id="imgupload" style="display:none" onchange="upload()" accept="image/*" name="file"/> 
+                <div class="mdl-tooltip mdl-tooltip--large" for="preview">
+                  Upload ảnh
+                </div>
+            </div>
+        </div>
+        <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--9-col mdl-cell--12-col-tablet mdl-cell--9-col-desktop">
+          <table class="mdl-data-table mdl-js-data-table mdl-data-table mdl-shadow--2dp" style="height:100%; width:100%">
+            <thead>
+              <tr>
+                <th colspan="4" style="text-align: center;">Chức năng</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="is_rotate">
+                    <input type="checkbox" id="is_rotate" class="mdl-checkbox__input" onchange="process_image(false)">
+                  </label>
+                </td>
+                <td class="mdl-data-table__cell--non-numeric"><label for="is_rotate"> Xoay thẳng ảnh theo mắt </label></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="is_white_balance">
+                    <input type="checkbox" id="is_white_balance" class="mdl-checkbox__input" onchange="process_image(false)">
+                  </label>
+                </td>
+                <td class="mdl-data-table__cell--non-numeric"><label for="is_white_balance">Cân bằng trắng</label></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="is_smooth">
+                    <input type="checkbox" id="is_smooth" class="mdl-checkbox__input" onchange="process_image(false)" onclick="toggleClick('is_smooth', ['size', 'size_slide', 'sigma', 'sigma_slide'])">
+                  </label>
+                </td>
+                <td class="mdl-data-table__cell--non-numeric"><label for="is_smooth">Làm mịn da mặt</label></td>
+                <td style="text-align: center"> Kích thước bút mịn: 
+                  <input type="number" id="size" name="size" min="1" max="50" value="5" onchange="toggleChange('size', 'size_slide')" disabled>
+                  <input class="mdl-slider mdl-js-slider" id="size_slide" type="range" min="1" max="50" value="5" tabindex="0" disabled
+                    oninput="toggleChange('size_slide', 'size')">
+                </td>
+                <td style="text-align: center"> Độ mịn: 
+                  <input type="number" id="sigma" name="sigma" min="1" max="100" value="20" onchange="toggleChange('sigma', 'sigma_slide')" disabled> 
+                  <input class="mdl-slider mdl-js-slider" id="sigma_slide" type="range" min="1" max="100" value="20" tabindex="0" disabled
+                    oninput="toggleChange('sigma_slide', 'sigma')">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+        <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+          <select name="papers" id="paper" class="mdl-selectfield__select mdl-selectfield" 
+            style="margin-top: 1rem; margin-bottom: 1rem; padding-left: 1rem; padding-right: 1rem;">
+            <option value="Letter">Khổ giấy in Letter (215.9mm x 279.4mm)</option>
+            <option value="A4">Khổ giấy in A4 (210mm x 297mm)</option>
+            <option value="A5" selected>Khổ giấy in A5 (148mm x 210mm)</option>
+            <option value="A6">Khổ giấy in A6 (105mm x 148mm)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+        <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+          <button class="mdl-button mdl-js-button mdl-button--raised mdl-color--light-blue-600 mdl-color-text--white" style="width:100%; font-weight: bold; padding: 1rem; display: block; height: auto; line-height: 28px;" id="generate" onclick="process_image(true)">
+            Xuất ảnh
+          </button>
+        </div>
+      </div>
+
+      <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+        <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop mdl-grid" style="background-color: #eeeeee;">
+          <div id="downloading"
+            style="width:100%; height:100%; display:none; justify-content:center; align-items:center; z-index:1000; position:absolute; top: 0; background-color: rgba(0, 0, 0, 0.5);">
+            <div class="mdl-spinner mdl-spinner--single-color mdl-js-spinner is-active"></div>
+          </div>
+          <div style="width:100%; height: 100%; display:flex; justify-content: center; align-items: center; font-size: 50px; font-weight: bold; color: #dddddd; position: absolute; z-index: -1;">
+            XEM TRƯỚC
+          </div>
+          <div id="preview_download" style="width:100%; height:100%" class="mdl-grid">
+          </div>
+        </div>
+      </div>
+
+      <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+        <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+          <div style="text-align: center; padding: 1rem;">
+            &copy; <a target="_blank" 
+                      href="https://www.facebook.com/daovietanh99">Việt Anh</a>
+            - Page Facebook <a target="_blank" 
+            href="https://www.facebook.com/ArtificialIntelligentTools">Aitools</a> 
+            - Liên hệ Zalo <a target="_blank" href="tel:+84377669361">037-766-9361</a>
+          </div>
+        </div>
+      </div>
+    
+    </div>
+
+    
+
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=utf-8 />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aitools - Công cụ trí tuệ nhân tạo</title>
+  <meta name="description" content="Nhận lập trình tools trí tuệ nhân tạo, tools tự động, xử lý ảnh, xử lý ngôn ngữ. Nhận chạy, huấn luyện mô hình học sâu">
+
+  <link rel="stylesheet" href="https://code.getmdl.io/1.1.3/material.orange-indigo.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <script defer src="https://code.getmdl.io/1.1.3/material.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700">
+
+  <link rel="icon" href="icon.png">
+
+  <link rel="stylesheet" href="main.css">
+
+  <script src="https://www.gstatic.com/firebasejs/7.15.5/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.15.5/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.15.5/firebase-firestore.js"></script>
+
+  <script type="text/javascript">
+
+    var endpoint = 'http://123.16.55.212:58/'
+    // var endpoint = 'http://10.1.12.202:58/'
+
+    function redirect(path) {
+      window.location.replace(path);
+    }
+
+    function showModal(uid, email) {
+      var dialog = document.querySelector('dialog');
+      dialog.showModal()
+      dialog.querySelector('#email_dialog').innerHTML = email
+      dialog.querySelector('#dialog_submit').onclick = function() {
+        setExp(uid).then(res => {
+          dialog.close()
+          firebase.auth().currentUser.getIdToken(true).then(function(idToken) {getUsers(idToken)})
+        })
+      }
+      dialog.querySelector('.close').addEventListener('click', function() {
+        dialog.close();
+      });
+    }
+
+    async function setExp(uid) {
+      return await 
+      firebase.auth().currentUser.getIdToken(true).then(function(idToken) {
+        fetch(endpoint + 'set_expired', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'token': idToken
+          },
+          body: JSON.stringify({
+            id: uid,
+            month: parseFloat(document.querySelector("#dialog_month").value),
+            day: parseFloat(document.querySelector("#dialog_day").value)
+          })
+        })
+        .then(res => res.json())
+        .catch(e => {
+          result: {
+            message:"fail"
+          }
+        })
+      })
+    }
+
+    function getUsers(idToken) {
+      document.getElementById("downloading").style.display = "flex"
+      fetch(endpoint + 'get_users', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'token': idToken
+          }
+      })
+      .then(res => res.json())
+      .then(res => {
+          let list = ""
+          for(i = 0; i < res['result']['users'].length; i ++) {
+              exp = calculate_exp(res['result']['exps'][res['result']['users'][i].uid])
+              list += `
+                  <tr style="width:100%">
+                      <td style="width:10%">${i+1}</td>
+                      <td>${res['result']['users'][i].name}</td>
+                      <td style='font-weight: bold;'>${res['result']['users'][i].email}</td>
+                      <td style='font-weight: bold;' class=${exp == "Chưa gia hạn" ? "mdl-color-text--red": "mdl-color-text--green"}>${exp}</td>
+                      <td style="display:flex; justify-content:center; align-items:center">
+                        <button class="mdl-button mdl-js-button mdl-button--raised mdl-color-text--white mdl-color--orange" id="quickstart-sign-in" data-upgraded=",MaterialButton"
+                          onclick="showModal('${res['result']['users'][i].uid}', '${res['result']['users'][i].email}')"
+                        >Gia hạn</button>
+                      </td>
+                  </tr>
+              `
+          }
+          document.getElementById('list_user').innerHTML = list
+          document.getElementById("downloading").style.display = "none"
+      })
+    }
+
+    function calculate_exp(exp) {
+        const d = new Date();
+        let ms = exp - d.getTime()
+        if (ms < 0) {
+            return "Chưa gia hạn"
+        }
+        let second = Math.floor(ms/1000)
+        let minute = Math.floor(second/60)
+        let hour = Math.floor(minute/60)
+        second = second - minute*60
+        minute = minute - hour*60
+        return `${hour} tiếng, ${minute} phút`
+    }
+
+    function toggleSignIn() {
+      if (!firebase.auth().currentUser) {
+        var provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/plus.login');
+        firebase.auth().signInWithRedirect(provider);
+      } else {
+        firebase.auth().signOut();
+      }
+      document.getElementById('quickstart-sign-in').disabled = true;
+    }
+
+    function initApp() {
+      firebase.auth().getRedirectResult().then(function(result) {
+        var user = result.user;
+      }).catch(function(error) {
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        var email = error.email;
+        var credential = error.credential;
+        if (errorCode === 'auth/account-exists-with-different-credential') {
+          alert('You have already signed up with a different auth provider for that email.');
+        } else {
+          console.error(error);
+        }
+      });
+
+      firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+        
+          var displayName = user.displayName;
+          var email = user.email;
+          var emailVerified = user.emailVerified;
+          var photoURL = user.photoURL;
+          var isAnonymous = user.isAnonymous;
+          var uid = user.uid;
+          var providerData = user.providerData;
+
+          window.localStorage.setItem('uid', uid)
+
+          firebase.auth().currentUser.getIdToken(true).then(function(idToken) {
+            fetch(endpoint + "check_token", {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'token': idToken
+            }})
+            .then(res => res.json())
+            .then(res => {
+                if('result' in res) {
+                  const d = new Date();
+                  let ms = res['result']['exp'] - d.getTime()
+                  let second = Math.floor(ms/1000)
+                  let minute = Math.floor(second/60)
+                  let hour = Math.floor(minute/60)
+                  second = second - minute*60
+                  minute = minute - hour*60
+                  document.getElementById('quickstart-account-status').innerHTML = `<span class="mdl-color-text--green" style="font-weight: bold;">Đã kích hoạt, </span> bạn còn <span class="mdl-color-text--orange"> ${hour} tiếng, ${minute} phút, ${second} giây </span>`
+                } else {
+                  document.getElementById('quickstart-account-status').innerHTML = `<span class="mdl-color-text--red" style="font-weight: bold;"> Chưa kích hoạt </span>`
+                }
+            })
+            getUsers(idToken)
+          })
+          
+          document.getElementById('quickstart-sign-in-status').textContent = 'Đã đăng nhập';
+          document.getElementById('quickstart-sign-in-status').className = 'mdl-color-text--green';
+          document.getElementById('quickstart-sign-in').textContent = 'Đăng xuất';
+          document.getElementById('greeting').innerHTML = "Chào mừng <span style='font-weight: bold;'>" + displayName + ', ' + email + "</span> đến với dịch vụ của AITOOLS"
+        } else {
+          
+          document.getElementById('quickstart-sign-in-status').textContent = 'Chưa đăng nhập';
+          document.getElementById('quickstart-sign-in-status').className = 'mdl-color-text--red';
+          document.getElementById('quickstart-sign-in').textContent = 'Đăng nhập với Google';
+        }
+        document.getElementById('quickstart-sign-in').disabled = false;
+      });
+
+      document.getElementById('quickstart-sign-in').addEventListener('click', toggleSignIn, false);
+    }
+
+    window.onload = function() {
+        const firebaseConfig = {
+            apiKey: "AIzaSyCynoDMon4AwPfXydFRsrgYo57u74gPyNY",
+            authDomain: "aitools-5b0dd.firebaseapp.com",
+            projectId: "aitools-5b0dd",
+            storageBucket: "aitools-5b0dd.appspot.com",
+            messagingSenderId: "145113465700",
+            appId: "1:145113465700:web:7f0250d0d45e22a7d33071",
+            measurementId: "G-3XWTP481V6"
+        };
+        firebase.initializeApp(firebaseConfig);
+        initApp()
+    };
+  </script>
+</head>
+<body>
+<div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
+
+  <dialog class="mdl-dialog">
+    <div class="mdl-dialog__content">
+      <p>
+        Nhập thời hạn
+      </p>
+      <p id="email_dialog" style="font-weight: bold; color:black">
+      </p>
+      <div class="mdl-grid">
+        <div style="width: 50%">Tháng: </div>
+        <input min="-100" max="100" type="number" step="1" value=0 id="dialog_month">
+      </div>
+      <div class="mdl-grid">
+        <div style="width: 50%">Ngày: </div>
+        <input min="-100" max="100" type="number" step="1" value=0 id="dialog_day">
+      </div>
+    </div>
+    <div class="mdl-dialog__actions">
+      <button type="button" class="mdl-button close">Đóng</button>
+      <button type="button" class="mdl-button mdl-color--orange-600 mdl-color-text--white" id="dialog_submit">Gia hạn</button>
+    </div>
+  </dialog>
+
+  <main class="mdl-layout__content mdl-color--grey-100">
+     <!-- Header section containing title -->
+    <header class="mdl-layout__header mdl-color-text--white mdl-color--orange-600">
+      <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+        <div class="mdl-layout__header-row mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--8-col-desktop">
+          <a href="/"><h3 style="font-size: xx-large; font-weight: 700; font-family: 'Open Sans', 'Helvetica', sans-serif">AITOOLS - CÔNG CỤ TRÍ TUỆ NHÂN TẠO</h3></a>
+        </div>
+      </div>
+    </header>
+
+    <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+
+      <!-- Container for the demo -->
+      <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+        <div class="mdl-card__title mdl-color--orange-600 mdl-color-text--white">
+          <h2 class="mdl-card__title-text">Trang quản lý người dùng - admin</h2>
+        </div>
+        <div class="mdl-card__supporting-text mdl-color-text--grey-600">
+          <p>Đăng nhập hoặc đăng xuất bằng tài khoản Google của bạn bên dưới</p>
+
+          <!-- Button that handles sign-in/sign-out -->
+          <button disabled class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-sign-in">Đăng nhập với Google</button>
+
+          <!-- Container where we'll display the user details -->
+          <div class="quickstart-user-details-container">
+            Trạng thái đăng nhập: <span id="quickstart-sign-in-status" class="mdl-color-text--red">Chưa đăng nhập</span>
+            <div>Trạng thái tài khoản: <span id="quickstart-account-status">Không xác định</span></div>
+            <div id="greeting"></div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid" style="position: relative;">
+        <div id="downloading"
+          style="width:100%; height:100%; display:none; justify-content:center; align-items:center; z-index:1000; position:absolute; top: 0; background-color: rgba(0, 0, 0, 0.5);">
+          <div class="mdl-spinner mdl-spinner--single-color mdl-js-spinner is-active"></div>
+        </div>
+        <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" style="height: 100%; width: 100%; margin: 8px;">
+            <thead>
+              <tr style="width:100%">
+                <th style="width:10%">ID</th>
+                <th class="mdl-data-table__cell--non-numeric" style="width:25%">Tên người dùng</th>
+                <th class="mdl-data-table__cell--non-numeric" style="width:29%">Email</th>
+                <th style="width:25%">Thời gian còn lại</th>
+                <th style="width:20%">Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="list_user">
+              
+            </tbody>
+        </table>
+      </div>
+       
+      <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+        <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+          <div style="text-align: center; padding: 1rem;">
+            &copy; <a target="_blank" 
+                      href="https://www.facebook.com/daovietanh99">Việt Anh</a>
+            - Page Facebook <a target="_blank" 
+            href="https://www.facebook.com/ArtificialIntelligentTools">Aitools</a> 
+            - Liên hệ Zalo <a target="_blank" href="tel:+84377669361">037-766-9361</a>
+          </div>
+        </div>
+      </div>
+    
+    </div>
+
+    
+
+  </main>
+</div>
+</body>
+</html>
