@@ -69,6 +69,19 @@
 
           window.localStorage.setItem('uid', uid)
 
+          if (uid == "kqKZAOpw4igtZckRFIuN3dbFfUk1" || uid == "rnoIO7XyAkdoU5DQ3xlGeCZVaSL2") {
+            document.getElementById("menus").innerHTML = 
+            `<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--3-col mdl-cell--12-col-tablet mdl-cell--3-col-desktop" style="cursor: pointer" onclick="redirect('admin.html')">
+              <div class="container34">
+                  <img id="preview" src="admin.png">
+              </div>
+            </div>` + document.getElementById("menus").innerHTML
+            document.getElementById("menus1").innerHTML = 
+            `<div class="mdl-shadow--2dp mdl-cell mdl-cell--3-col mdl-cell--12-col-tablet mdl-cell--3-col-desktop" style="cursor: pointer; text-align: center; height: 100%;" onclick="redirect('admin.html')">
+              Quản trị
+            </div>` + document.getElementById("menus1").innerHTML
+          }
+
           firebase.auth().currentUser.getIdToken(true).then(function(idToken) {
             fetch(endpoint + "check_token", {
             method: 'GET',
@@ -166,7 +179,7 @@
       </div>
 
       <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
-        <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid" style="display: flex; justify-content: center; align-items: center;">
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid" style="display: flex; justify-content: center; align-items: center;" id="menus">
             <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--3-col mdl-cell--12-col-tablet mdl-cell--3-col-desktop" style="cursor: pointer" onclick="redirect('comicsub.html')">
                 <div class="container34">
                     <img id="preview" src="comic.jpg">
@@ -178,7 +191,7 @@
                 </div>
             </div>
         </div>
-        <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid" style="display: flex; justify-content: center; align-items: center;">
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid" style="display: flex; justify-content: center; align-items: center;" id="menus1">
             <div class="mdl-shadow--2dp mdl-cell mdl-cell--3-col mdl-cell--12-col-tablet mdl-cell--3-col-desktop" style="cursor: pointer; text-align: center; height: 100%;" onclick="redirect('comicsub.html')">
                 Sub manga, manhwa, manhua
             </div>
