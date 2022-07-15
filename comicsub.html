@@ -82,10 +82,13 @@
         }).then(
           async response => {
             let list = ""
+            let list_saved = ""
             for(let i = 0; i < len; i++) {
-              list += `<img style="width: 18%; margin: 1%;" id=${pad(i, 6)}>`
+              list += `<img style="width: 18%; margin: 1%;" id="${pad(i, 6)}">`
+              list_saved += `<img id="${pad(i, 6)}_saved">`
             }
             document.getElementById("list_img").innerHTML = list
+            document.getElementById("saved_img").innerHTML = list_saved
             for(let i = 0; i < len; i++) {
               await download_image('origsub', uid, `temp_${pad(i, 6)}`, idToken, pad(i, 6))
             }
@@ -115,7 +118,8 @@
           return response.json()
         }).then(async res => {
           for(let i = 0; i < res['result']['num_img']; i++) {
-              await download_image('sub', uid, `temp_${pad(i, 6)}`, idToken, pad(i, 6))
+            document.getElementById(pad(i, 6) + '_saved').src = document.getElementById(pad(i, 6)).src
+            await download_image('sub', uid, `temp_${pad(i, 6)}`, idToken, pad(i, 6))
           }
           document.getElementById("uploading").style.setProperty("display", "none");
           document.getElementById("num_total").innerText = res['result']['num_img'];
@@ -153,45 +157,55 @@
           },
         }).then(response => {
           return response.json()
-        }).then(async res => {
-          await download_image('origsub', uid, `temp_${pad(img_id, 6)}`, idToken, 'orig_img')
-          await download_image('sub', uid, `temp_${pad(img_id, 6)}_filled`, idToken, 'sub_img')
-          var img = document.getElementById('orig_img'); 
-          var width = img.offsetWidth;
-          var height = img.offsetHeight;
-          var naturalWidth = img.naturalWidth;
-          var naturalHeight = img.naturalHeight;
-          var ratioWidth = width/naturalWidth;
-          var ratioHeight = height/naturalHeight;
-          var str = "";
-          var str1 = "";
-          var sub = "";
-          for(let i=0; i < res['result']['subs'].length; i++) {
-            var coord = res['result']['subs'][i][0].split(' ')
-            var div_width = (parseInt(coord[2]) - parseInt(coord[0]))*ratioWidth
-            var div_height = (parseInt(coord[3]) - parseInt(coord[1]))*ratioHeight
-            var top = parseInt(coord[1])*ratioHeight
-            var left = parseInt(coord[0])*ratioWidth
-            str += `<div class="bounding_box" style="width:${div_width}px; height:${div_height}px; top:${top}px; left:${left}px"><span></span></div>`
-            str1 += `<div class="bounding_box" style="width:${div_width}px; height:${div_height}px; top:${top}px; left:${left}px"></div>`
-            sub += `
-              <tr>
-                <td style="width:30%">${res['result']['subs'][i][1]}</td>
-                <td style="width:30%">${res['result']['subs'][i][2]}</td>
-                <td style="width:30%">${res['result']['subs'][i][3]}</td>
-              </tr>`
+        }).then(res => {
+          document.getElementById("orig_img").src = document.getElementById(pad(img_id, 6) + '_saved').src
+          document.getElementById("sub_img").src = document.getElementById(pad(img_id, 6)).src
+          var img = document.getElementById("orig_img")
+          img.onload = () => {
+            var width = img.offsetWidth;
+            var height = img.offsetHeight;
+            var naturalWidth = img.naturalWidth;
+            var naturalHeight = img.naturalHeight;
+            var ratioWidth = width/naturalWidth;
+            var ratioHeight = height/naturalHeight;
+            var str = "";
+            var str1 = "";
+            var sub = "";
+            var font_size = ratioWidth*15/1.5;
+            for(let i=0; i < res['result']['subs'].length; i++) {
+              var coord = res['result']['subs'][i][0].split(' ')
+              var div_width = (parseInt(coord[2]) - parseInt(coord[0]))*ratioWidth
+              var div_height = (parseInt(coord[3]) - parseInt(coord[1]))*ratioHeight
+              var top = parseInt(coord[1])*ratioHeight
+              var left = parseInt(coord[0])*ratioWidth
+              str += `<div class="bounding_box" style="width:${div_width}px; height:${div_height}px; top:${top}px; left:${left}px"><span></span></div>`
+              str1 += `<div class="bounding_box" 
+                style="width:${div_width}px; 
+                  height:${div_height}px; 
+                  top:${top}px; left:${left}px; 
+                  font-size:${font_size}px; font-weight:bolder; text-transform: uppercase; font-family: 'mto-astro';
+                  line-height:100%; display:flex; justify-content:center; align-items: center">
+                ${res['result']['subs'][i][3]}</div>`
+              sub += `
+                <tr>
+                  <td style="width:30%">${res['result']['subs'][i][1]}</td>
+                  <td style="width:30%">${res['result']['subs'][i][2]}</td>
+                  <td style="width:30%">${res['result']['subs'][i][3]}</td>
+                </tr>`
+            }
+            document.getElementById("bb_layer").innerHTML = str
+            document.getElementById("bb_layer_sub").innerHTML = str1
+            document.getElementById("sub_text").innerHTML = sub
+            document.getElementById("download_orig").style.setProperty("display", "none");
+            document.getElementById("download_sub").style.setProperty("display", "none");
           }
-          document.getElementById("bb_layer").innerHTML = str
-          document.getElementById("bb_layer_sub").innerHTML = str1
-          document.getElementById("sub_text").innerHTML = sub
-          document.getElementById("download_orig").style.setProperty("display", "none");
-          document.getElementById("download_sub").style.setProperty("display", "none");
         })
       })
     }
 
     function downloadResult() {
       let uid = window.localStorage.getItem('uid');
+      document.getElementById("downloading_sub").style.display = "initial"
       firebase.auth().currentUser.getIdToken(true).then(function(idToken) {
         fetch(endpoint + `getsubimage/${uid}`, {
           method: 'GET',
@@ -202,6 +216,7 @@
         }) 
         .then(res => res.blob())
         .then(blob => {
+          document.getElementById("downloading_sub").style.display = "none"
           var a = document. createElement("a");
           a.href = URL.createObjectURL(blob);
           a.download = uid + ".zip";
@@ -359,7 +374,7 @@
                 
                 <div id="list_img" class="mdl-grid" style="width:100%; margin:0; display: flex; justify-content: center; align-items: center;">
                 </div>
-                
+
                 <button class="button_sub" id="button_sub" style="display: none;" onclick="handleSub()">Sub truyện</button>
                 <svg id="upload_icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="text-gray" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 32 32" data-icon="carbon:cloud-upload"><path fill="currentColor" d="m11 18l1.41 1.41L15 16.83V29h2V16.83l2.59 2.58L21 18l-5-5l-5 5z"></path><path fill="currentColor" d="M23.5 22H23v-2h.5a4.5 4.5 0 0 0 .36-9H23l-.1-.82a7 7 0 0 0-13.88 0L9 11h-.86a4.5 4.5 0 0 0 .36 9H9v2h-.5A6.5 6.5 0 0 1 7.2 9.14a9 9 0 0 1 17.6 0A6.5 6.5 0 0 1 23.5 22Z"></path></svg>
                 <div id="upload_title" style="padding-bottom: 2rem;">Nhấp chuột để chọn file</div>
@@ -368,6 +383,9 @@
             </label>
             <div id="uploading" style="width:100%; height:100%; display:none; justify-content:center; align-items:center; z-index:1000; position:absolute; top: 0; left:0; background-color: rgba(0, 0, 0, 0.5);">
               <div>
+                <div style="width: 100%; justify-content: center; align-items: center; display: flex; margin-bottom: 2rem;">
+                  <div class="mdl-spinner mdl-spinner--single-color mdl-js-spinner is-active"></div>
+                </div>
                 <div id="p1_text_progress" style="width:100%; text-align:center; padding-bottom: 2rem; color: #eeeeee; font-weight: bold"> Bắt đầu xử lý </div>
                 <div id="p1" class="mdl-progress mdl-js-progress">
                   <div class="progressbar bar bar1" style="width: 0%;" id="p1_progress"></div>
@@ -387,6 +405,7 @@
               <div class="mdl-cell mdl-cell--2-col mdl-cell--2-col-tablet mdl-cell--2-col-desktop" style="text-align: center;"><input type="number" id="page" name="quantity" value="1" min="1" max="100" onchange="showResult()">/<span id="num_total">10</span></div>
               <div class="mdl-cell mdl-cell--5-col mdl-cell--5-col-tablet mdl-cell--5-col-desktop" style="text-align: center;">Ảnh sub</div>
             </div>
+            <div style="display: none;" id="saved_img"></div>
             <div style="width:100%; padding: 0; margin: 0; min-height: 5rem;" class="mdl-grid">
               <div class="mdl-cell mdl-cell--6-col mdl-cell--6-col-tablet mdl-cell--6-col-desktop" style="text-align: center; position: relative;">
                 <div style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 500; padding: 0; margin: 0;">
@@ -435,7 +454,8 @@
 
         <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
           <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
-            <button class="mdl-button mdl-js-button mdl-button--raised mdl-color--light-blue-600 mdl-color-text--white" style="width:100%; font-weight: bold; padding: 1rem; display: block; height: auto; line-height: 28px;" id="generate" onclick="downloadResult()">
+            <button class="mdl-button mdl-js-button mdl-button--raised mdl-color--light-blue-600 mdl-color-text--white" style="width:100%; font-weight: bold; padding: 1rem; display: flex; height: auto; line-height: 28px; justify-content: center; align-items: center;" id="generate" onclick="downloadResult()">
+              <div class="mdl-spinner mdl-spinner--single-color mdl-js-spinner is-active" style="margin-right: 1rem; display: none;" id="downloading_sub"></div>
               Tải sub
             </button>
           </div>

@@ -14,9 +14,15 @@
  * limitations under the License.
  */
 
+@font-face {
+  font-family: mto-astro;
+  src: url(font/MTO_Astro_City.ttf);
+}
+
  html, body {
     font-family: 'Open Sans', 'Helvetica', sans-serif;
     background-color: #f5f5f5;
+    line-height: 10%;
   }
   a {
     text-decoration: none;
@@ -314,7 +320,8 @@
     white-space: -o-pre-wrap; 
     white-space: pre-wrap; 
     white-space: -moz-pre-wrap; 
-    white-space: -pre-wrap; 
+    white-space: -pre-wrap;
+    line-height: 100%;
   }
 
   table {
