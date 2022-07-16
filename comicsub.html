@@ -125,7 +125,7 @@
           document.getElementById("num_total").innerText = res['result']['num_img'];
           document.getElementById("page").max = res['result']['num_img'];
           document.getElementById("page").value = 1
-          showResult()
+          downloadSub().then(res => showResult())
         })
       })
     }
@@ -143,66 +143,72 @@
       showResult()
     }
 
-    function showResult() {
-      let img_id = document.getElementById("page").value - 1;
+    function downloadSub() {
       let uid = window.localStorage.getItem('uid');
-      firebase.auth().currentUser.getIdToken(true).then(function(idToken) {
+      return firebase.auth().currentUser.getIdToken(true).then(function(idToken) {
         document.getElementById("download_orig").style.setProperty("display", "flex");
         document.getElementById("download_sub").style.setProperty("display", "flex");
-        fetch(endpoint + `getsub/${uid}/temp_${pad(img_id, 6)}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'token': idToken
-          },
-        }).then(response => {
-          return response.json()
-        }).then(res => {
-          document.getElementById("orig_img").src = document.getElementById(pad(img_id, 6) + '_saved').src
-          document.getElementById("sub_img").src = document.getElementById(pad(img_id, 6)).src
-          var img = document.getElementById("orig_img")
-          img.onload = () => {
-            var width = img.offsetWidth;
-            var height = img.offsetHeight;
-            var naturalWidth = img.naturalWidth;
-            var naturalHeight = img.naturalHeight;
-            var ratioWidth = width/naturalWidth;
-            var ratioHeight = height/naturalHeight;
-            var str = "";
-            var str1 = "";
-            var sub = "";
-            var font_size = ratioWidth*15/1.5;
-            var out_line = ratioWidth*15/1.5/30;
-            for(let i=0; i < res['result']['subs'].length; i++) {
-              var coord = res['result']['subs'][i][0].split(' ')
-              var div_width = (parseInt(coord[2]) - parseInt(coord[0]))*ratioWidth
-              var div_height = (parseInt(coord[3]) - parseInt(coord[1]))*ratioHeight
-              var top = parseInt(coord[1])*ratioHeight
-              var left = parseInt(coord[0])*ratioWidth
-              str += `<div class="bounding_box" style="width:${div_width}px; height:${div_height}px; top:${top}px; left:${left}px"><span></span></div>`
-              str1 += `<div class="bounding_box" 
-                style="width:${div_width}px; 
-                  height:${div_height}px; 
-                  top:${top}px; left:${left}px; 
-                  font-size:${font_size}px; font-weight:bolder; text-transform: uppercase; font-family: 'mto-astro';
-                  line-height:100%; display:flex; justify-content:center; align-items: center;
-                  text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">
-                ${res['result']['subs'][i][3]}</div>`
-              sub += `
-                <tr>
-                  <td style="width:30%">${res['result']['subs'][i][1]}</td>
-                  <td style="width:30%">${res['result']['subs'][i][2]}</td>
-                  <td style="width:30%">${res['result']['subs'][i][3]}</td>
-                </tr>`
-            }
-            document.getElementById("bb_layer").innerHTML = str
-            document.getElementById("bb_layer_sub").innerHTML = str1
-            document.getElementById("sub_text").innerHTML = sub
+        return fetch(endpoint + `getsub/${uid}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'token': idToken
+            },
+          }).then(response => {
+            return response.json()
+          }).then(res => {
+            window.localStorage.setItem("subs", JSON.stringify(res['result']['subs']))
             document.getElementById("download_orig").style.setProperty("display", "none");
             document.getElementById("download_sub").style.setProperty("display", "none");
-          }
-        })
+            return
+          })
       })
+    }
+
+    function showResult() {
+      let img_id = document.getElementById("page").value - 1;
+      let sub = JSON.parse(window.localStorage.getItem("subs"))["temp_" + pad(img_id, 6)]
+      document.getElementById("orig_img").src = document.getElementById(pad(img_id, 6) + '_saved').src
+      document.getElementById("sub_img").src = document.getElementById(pad(img_id, 6)).src
+      var img = document.getElementById("orig_img")
+      img.onload = () => {
+        var width = img.offsetWidth;
+        var height = img.offsetHeight;
+        var naturalWidth = img.naturalWidth;
+        var naturalHeight = img.naturalHeight;
+        var ratioWidth = width/naturalWidth;
+        var ratioHeight = height/naturalHeight;
+        var str = "";
+        var str1 = "";
+        var sub_str = "";
+        var font_size = ratioWidth*15/1.5;
+        var out_line = ratioWidth*15/1.5/30;
+        for(let i=0; i < sub.length; i++) {
+          var coord = sub[i][0].split(' ')
+          var div_width = (parseInt(coord[2]) - parseInt(coord[0]))*ratioWidth
+          var div_height = (parseInt(coord[3]) - parseInt(coord[1]))*ratioHeight
+          var top = parseInt(coord[1])*ratioHeight
+          var left = parseInt(coord[0])*ratioWidth
+          str += `<div class="bounding_box" style="width:${div_width}px; height:${div_height}px; top:${top}px; left:${left}px"><span></span></div>`
+          str1 += `<div class="bounding_box" 
+            style="width:${div_width}px; 
+              height:${div_height}px; 
+              top:${top}px; left:${left}px; 
+              font-size:${font_size}px; font-weight:bolder; text-transform: uppercase; font-family: 'mto-astro';
+              line-height:100%; display:flex; justify-content:center; align-items: center;
+              text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">
+            ${sub[i][3]}</div>`
+          sub_str += `
+            <tr>
+              <td style="width:30%">${sub[i][1]}</td>
+              <td style="width:30%">${sub[i][2]}</td>
+              <td style="width:30%">${sub[i][3]}</td>
+            </tr>`
+        }
+        document.getElementById("bb_layer").innerHTML = str
+        document.getElementById("bb_layer_sub").innerHTML = str1
+        document.getElementById("sub_text").innerHTML = sub_str
+      }
     }
 
     function downloadResult() {
