@@ -84,7 +84,7 @@
             let list = ""
             let list_saved = ""
             for(let i = 0; i < len; i++) {
-              list += `<img style="width: 18%; margin: 1%;" id="${pad(i, 6)}">`
+              list += `<img id="${pad(i, 6)}" class="preview_img ${i == 0 ? "border-dashed-2":""}">`
               list_saved += `<img id="${pad(i, 6)}_saved">`
             }
             document.getElementById("list_img").innerHTML = list
@@ -120,6 +120,7 @@
           for(let i = 0; i < res['result']['num_img']; i++) {
             document.getElementById(pad(i, 6) + '_saved').src = document.getElementById(pad(i, 6)).src
             await download_image('sub', uid, `temp_${pad(i, 6)}`, idToken, pad(i, 6))
+            document.getElementById(pad(i,6)).onclick = () => showResult(i)
           }
           document.getElementById("uploading").style.setProperty("display", "none");
           document.getElementById("num_total").innerText = res['result']['num_img'];
@@ -165,8 +166,14 @@
       })
     }
 
-    function showResult() {
+    function showResult(id) {
       let img_id = document.getElementById("page").value - 1;
+      if (id == 0 || id) {
+        img_id = id
+        document.getElementById("page").value = img_id + 1
+      }
+      document.querySelector(".border-dashed-2").classList.remove("border-dashed-2")
+      document.getElementById(pad(img_id, 6)).classList.add("border-dashed-2")
       let sub = JSON.parse(window.localStorage.getItem("subs"))["temp_" + pad(img_id, 6)]
       document.getElementById("orig_img").src = document.getElementById(pad(img_id, 6) + '_saved').src
       document.getElementById("sub_img").src = document.getElementById(pad(img_id, 6)).src
@@ -380,8 +387,8 @@
                   Xem trước ảnh
                 </div>
                 
-                <div id="list_img" class="mdl-grid" style="width:100%; margin:0; display: flex; justify-content: center; align-items: center;">
-                </div>
+                <button id="list_img" class="mdl-grid" style="width:100%; margin:0; border:none; display: flex; justify-content: center; align-items: center; z-index: 700; position: relative;">
+                </button>
 
                 <button class="button_sub" id="button_sub" style="display: none;" onclick="handleSub()">Sub truyện</button>
                 <svg id="upload_icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="text-gray" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 32 32" data-icon="carbon:cloud-upload"><path fill="currentColor" d="m11 18l1.41 1.41L15 16.83V29h2V16.83l2.59 2.58L21 18l-5-5l-5 5z"></path><path fill="currentColor" d="M23.5 22H23v-2h.5a4.5 4.5 0 0 0 .36-9H23l-.1-.82a7 7 0 0 0-13.88 0L9 11h-.86a4.5 4.5 0 0 0 .36 9H9v2h-.5A6.5 6.5 0 0 1 7.2 9.14a9 9 0 0 1 17.6 0A6.5 6.5 0 0 1 23.5 22Z"></path></svg>
