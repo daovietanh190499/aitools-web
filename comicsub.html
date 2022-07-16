@@ -133,7 +133,7 @@
 
     function getAllData() {
       return {
-        "lang": "en"
+        "lang": "vi"
       }
     }
 
@@ -166,7 +166,7 @@
       })
     }
 
-    function showResult(id) {
+    function showResult(id, changeFont=false, changeSub=false) {
       let img_id = document.getElementById("page").value - 1;
       if (id == 0 || id) {
         img_id = id
@@ -188,9 +188,11 @@
         var str = "";
         var str1 = "";
         var sub_str = "";
-        var font_size = ratioWidth*15/1.5;
-        var out_line = ratioWidth*15/1.5/30;
         for(let i=0; i < sub.length; i++) {
+          var font_size = ratioWidth*15/1.5;
+          if (changeFont && sub[i].length == 5) {
+            font_size = ratioWidth*parseFloat(sub[i][4])/1.5
+          }
           var coord = sub[i][0].split(' ')
           var div_width = (parseInt(coord[2]) - parseInt(coord[0]))*ratioWidth
           var div_height = (parseInt(coord[3]) - parseInt(coord[1]))*ratioHeight
@@ -198,24 +200,56 @@
           var left = parseInt(coord[0])*ratioWidth
           str += `<div class="bounding_box" style="width:${div_width}px; height:${div_height}px; top:${top}px; left:${left}px"><span></span></div>`
           str1 += `<div class="bounding_box" 
+            contentEditable="true"
             style="width:${div_width}px; 
               height:${div_height}px; 
               top:${top}px; left:${left}px; 
               font-size:${font_size}px; font-weight:bolder; text-transform: uppercase; font-family: 'mto-astro';
-              line-height:100%; display:flex; justify-content:center; align-items: center;
-              text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">
-            ${sub[i][3]}</div>`
+              line-height:100%;
+              display:flex; justify-content:center; align-items: center;
+              text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;"
+            oninput="changeSub(${img_id}, ${i}, this.innerText, false)"
+            >
+              ${sub[i][3]}
+            </div>`
           sub_str += `
             <tr>
-              <td style="width:30%">${sub[i][1]}</td>
-              <td style="width:30%">${sub[i][2]}</td>
-              <td style="width:30%">${sub[i][3]}</td>
+              <td style="width:26%">${sub[i][1]}</td>
+              <td style="width:27%">${sub[i][2]}</td>
+              <td style="width:27%">${sub[i][3]}</td>
+              <td style="width:10%"><input min=1 max=100 value=${sub[i].length == 5 ? sub[i][4] : 15} 
+                type="number" oninput="changeFont(${img_id}, ${i}, this.value)"></td>
             </tr>`
         }
         document.getElementById("bb_layer").innerHTML = str
-        document.getElementById("bb_layer_sub").innerHTML = str1
-        document.getElementById("sub_text").innerHTML = sub_str
+        if(!changeSub){
+          document.getElementById("bb_layer_sub").innerHTML = str1
+        }
+        if(!changeFont){
+          document.getElementById("sub_text").innerHTML = sub_str
+        }
       }
+    }
+
+    function changeSub(img_id, i, sub_str, is_regenerate) {
+      let all_sub = JSON.parse(window.localStorage.getItem("subs"))
+      let sub = all_sub["temp_" + pad(img_id, 6)]
+      sub[i][3] = sub_str
+      all_sub["temp_" + pad(img_id, 6)] = sub
+      window.localStorage.setItem("subs", JSON.stringify(all_sub))
+      showResult(undefined, is_regenerate, !is_regenerate)
+    }
+
+    function changeFont(img_id, i, size) {
+      let all_sub = JSON.parse(window.localStorage.getItem("subs"))
+      let sub = all_sub["temp_" + pad(img_id, 6)]
+      if(sub[i].length == 4) {
+        sub[i].push(size)
+      }
+      sub[i][4] = size
+      all_sub["temp_" + pad(img_id, 6)] = sub
+      window.localStorage.setItem("subs", JSON.stringify(all_sub))
+      showResult(undefined, true, false)
     }
 
     function downloadResult() {
@@ -238,6 +272,62 @@
           a.click();
         })
       })
+    }
+
+    function getLines(ctx, text, maxWidth) {
+        var words = text.split(" ");
+        var lines = [];
+        var currentLine = words[0];
+
+        for (var i = 1; i < words.length; i++) {
+            var word = words[i];
+            var width = ctx.measureText(currentLine + " " + word).width;
+            if (width < maxWidth) {
+                currentLine += " " + word;
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        lines.push(currentLine);
+        return lines;
+    }
+
+    function drawStroked(ctx, text, x, y) {
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 3;
+        ctx.strokeText(text, x, y);
+        ctx.fillStyle = 'black';
+        ctx.fillText(text, x, y);
+    }
+
+    function drawResult() {
+      let img_id = document.getElementById("page").value - 1;
+      var canvas = document.getElementById("canvas");
+      var ctx = canvas.getContext("2d");
+      var img = document.getElementById("sub_img")
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      ctx.drawImage(img, 0, 0);
+      let sub = JSON.parse(window.localStorage.getItem("subs"))["temp_" + pad(img_id, 6)];
+      for(let i = 0; i < sub.length; i ++) {
+        var coord = sub[i][0].split(' ')
+        ctx.font=`bolder ${sub[i][4]/1.5}px mto-astro`;
+        ctx.textAlign = "center";
+        let lines = getLines(ctx, sub[i][3], parseInt(coord[2]) - parseInt(coord[0]))
+        var xmin = parseInt(coord[0]);
+        var ymin = parseInt(coord[1]);
+        var xmax = parseInt(coord[2]);
+        var ymax = parseInt(coord[3]);
+        var lineheight = sub[i][4]/1.5;
+        var d_height = lineheight*lines.length/2;
+        for (var j = 0; j<lines.length; j++)
+            drawStroked(ctx, lines[j], (xmax + xmin)/2, (ymax + ymin -lineheight)/2 + (j*lineheight) );
+      }
+      var link = document.createElement('a');
+      link.download = pad(img_id, 6) + '_sub.png';
+      link.href = canvas.toDataURL("image/png")
+      link.click();
     }
 
     function initApp() {
@@ -451,13 +541,22 @@
         </div>
 
         <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+          <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+            <button class="mdl-button mdl-js-button mdl-button--raised mdl-color--orange-600 mdl-color-text--white" style="width:100%; font-weight: bold; padding: 1rem; display: flex; height: auto; line-height: 28px; justify-content: center; align-items: center;" onclick="drawResult()">
+              Tải ảnh sub hiện tại
+            </button>
+          </div>
+        </div>
+
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
           <!-- <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop"> -->
           <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" style="height: 100%; width: 100%; margin: 8px;" id="spec">
             <thead>
               <tr>
                 <th class="mdl-data-table__cell--non-numeric">Văn bản gốc</th>
                 <th>Eng sub</th>
-                <th>Văn bản sub</th>
+                <th>Vietsub</th>
+                <th>Font size</th>
               </tr>
             </thead>
             <tbody id="sub_text">
@@ -475,6 +574,8 @@
             </button>
           </div>
         </div>
+
+        <canvas id="canvas" style="display: none;"></canvas>
 
         <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
           <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
