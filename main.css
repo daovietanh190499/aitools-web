@@ -281,6 +281,12 @@
     background-color: transparent;
     background-image: none;
     cursor: pointer;
+    margin-bottom: 1rem;
+  }
+
+  .button_sub:hover {
+    color: white;
+    background-color: rgba(30,64,175,var(--un-text-opacity));
   }
 
   #orig_img, #sub_img {

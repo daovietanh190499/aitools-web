@@ -172,6 +172,7 @@
             var str1 = "";
             var sub = "";
             var font_size = ratioWidth*15/1.5;
+            var out_line = ratioWidth*15/1.5/30;
             for(let i=0; i < res['result']['subs'].length; i++) {
               var coord = res['result']['subs'][i][0].split(' ')
               var div_width = (parseInt(coord[2]) - parseInt(coord[0]))*ratioWidth
@@ -184,7 +185,8 @@
                   height:${div_height}px; 
                   top:${top}px; left:${left}px; 
                   font-size:${font_size}px; font-weight:bolder; text-transform: uppercase; font-family: 'mto-astro';
-                  line-height:100%; display:flex; justify-content:center; align-items: center">
+                  line-height:100%; display:flex; justify-content:center; align-items: center;
+                  text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;">
                 ${res['result']['subs'][i][3]}</div>`
               sub += `
                 <tr>
