@@ -23,6 +23,7 @@
 
   <script src="jquery.min.js"></script>
   <script src="jquery.textfill.min.js"></script>
+  <script src="uuid.min.js"></script>
 
   <script type="text/javascript">
 
@@ -188,6 +189,7 @@
         var str = "";
         var str1 = "";
         var sub_str = "";
+        let font = window.localStorage.getItem('font')
         for(let i=0; i < sub.length; i++) {
           var font_size = ratioWidth*15/1.5;
           if (changeFont && sub[i].length == 5) {
@@ -204,7 +206,7 @@
             style="width:${div_width}px; 
               height:${div_height}px; 
               top:${top}px; left:${left}px; 
-              font-size:${font_size}px; font-weight:bolder; text-transform: uppercase; font-family: 'mto-astro';
+              font-size:${font_size}px; font-weight:bolder; text-transform: uppercase; font-family: '${font}';
               line-height:100%;
               display:flex; justify-content:center; align-items: center;
               text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;"
@@ -310,9 +312,10 @@
       canvas.height = img.naturalHeight
       ctx.drawImage(img, 0, 0);
       let sub = JSON.parse(window.localStorage.getItem("subs"))["temp_" + pad(img_id, 6)];
+      let font = window.localStorage.getItem('font')
       for(let i = 0; i < sub.length; i ++) {
         var coord = sub[i][0].split(' ')
-        ctx.font=`bolder ${sub[i][4]/1.5}px mto-astro`;
+        ctx.font=`bolder ${sub[i][4]/1.5}px '${font}'`;
         ctx.textAlign = "center";
         let lines = getLines(ctx, sub[i][3], parseInt(coord[2]) - parseInt(coord[0]))
         var xmin = parseInt(coord[0]);
@@ -330,7 +333,30 @@
       link.click();
     }
 
+    function base64convert (files) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        console.log(e.target.result.split(',')[1])
+        var newStyle = document.createElement('style');
+        var id = uuid.v4()
+        newStyle.appendChild(document.createTextNode("\
+          @font-face {\
+              font-family: '" + id + "';\
+              src: url('data:font/opentype; base64," + e.target.result.split(',')[1] + "');\
+          }\
+        "));
+        document.head.appendChild(newStyle);
+        document.getElementById("font_preview").style.fontFamily = `'${id}'`
+        window.localStorage.setItem('font', id)
+        if(document.getElementById("saved_img").innerHTML != "")
+          showResult(undefined, true, false)
+      }
+      reader.readAsDataURL(files[0])
+    }
+
     function initApp() {
+      window.localStorage.setItem('font', 'mto-astro')
+
       firebase.auth().getRedirectResult().then(function(result) {
         var user = result.user;
       }).catch(function(error) {
@@ -545,6 +571,14 @@
             <button class="mdl-button mdl-js-button mdl-button--raised mdl-color--orange-600 mdl-color-text--white" style="width:100%; font-weight: bold; padding: 1rem; display: flex; height: auto; line-height: 28px; justify-content: center; align-items: center;" onclick="drawResult()">
               Tải ảnh sub hiện tại
             </button>
+          </div>
+        </div>
+
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+          <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop mdl-grid">
+            <div style="display: flex; justify-content: center; align-items: center; margin-right: 1rem;">Đổi Font:</div>
+            <input type="file" onchange="base64convert(this.files)" accept=".ttf, .woff">
+            <div style="font-family: 'mto-astro'; display: flex; justify-content: center; align-items: center; margin-left: 5rem;" id="font_preview">The quick brown fox jump over the lazy dog</div>
           </div>
         </div>
 
