@@ -24,11 +24,14 @@
   <script src="jquery.min.js"></script>
   <script src="jquery.textfill.min.js"></script>
   <script src="uuid.min.js"></script>
+  <script src="socket.io.min.js"></script>
 
   <script type="text/javascript">
 
     var endpoint = 'http://server.ai-tools.shop:58/'
     // var endpoint = 'http://10.1.13.40:5000/'
+
+    const socket = io("http://server.ai-tools.shop:58/");
 
     function toggleSignIn() {
       if (!firebase.auth().currentUser) {
@@ -386,10 +389,8 @@
 
           window.localStorage.setItem('uid', uid)
 
-          var source = new EventSource(endpoint + `/listen/${uid}`);
-          source.onmessage = function(e) {
-            message = e.data
-            mes = message.split(" ")
+          socket.on(uid, function(msg) {
+            mes = msg.message.split(" ")
             let percent = 0
             let text = "Bắt đầu xử lý"
             if(mes[0] == "upload") {
@@ -401,7 +402,7 @@
             }
             document.getElementById("p1_text_progress").innerText = text
             document.getElementById("p1_progress").style.setProperty("width", `${percent}%`)
-          };
+          })
 
           firebase.auth().currentUser.getIdToken(true).then(function(idToken) {
             console.log(idToken)
