@@ -533,9 +533,19 @@
         <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
           <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop" style="padding: 1rem; position: relative;">
             <div style="width:100%; padding: 0; margin: 0;" class="mdl-grid">
-              <div class="mdl-cell mdl-cell--5-col mdl-cell--5-col-tablet mdl-cell--5-col-desktop" style="text-align: center;">Ảnh gốc</div>
+              <div class="mdl-cell mdl-cell--5-col mdl-cell--5-col-tablet mdl-cell--5-col-desktop" style="text-align: center; position: relative;">
+                <div style="width:20%; height: 100%; position: absolute; left: 0; cursor: pointer;" id="nav-left" onclick="handlePage(-1)">
+                  <i class="material-icons" style="font-weight: bold; text-align: center; color: black;">arrow_back_ios</i>
+                </div>
+                Ảnh gốc
+              </div>
               <div class="mdl-cell mdl-cell--2-col mdl-cell--2-col-tablet mdl-cell--2-col-desktop" style="text-align: center;"><input type="number" id="page" name="quantity" value="1" min="1" max="100" onchange="showResult()">/<span id="num_total">10</span></div>
-              <div class="mdl-cell mdl-cell--5-col mdl-cell--5-col-tablet mdl-cell--5-col-desktop" style="text-align: center;">Ảnh sub</div>
+              <div class="mdl-cell mdl-cell--5-col mdl-cell--5-col-tablet mdl-cell--5-col-desktop" style="text-align: center; position: relative;">
+                Ảnh sub
+                <div style="width:20%; height: 100%; right:0; position: absolute; cursor: pointer;" id="nav-right" onclick="handlePage(1)">
+                  <i class="material-icons" style="font-weight: bold; text-align: center; color: black; ">arrow_forward_ios</i>
+                </div>
+              </div>
             </div>
             <div style="display: none;" id="saved_img"></div>
             <div style="width:100%; padding: 0; margin: 0; min-height: 5rem;" class="mdl-grid">
@@ -546,20 +556,15 @@
                 <div id="download_orig" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 600; padding: 0; margin: 0; background-color: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center;">
                   <div class="mdl-spinner mdl-spinner--single-color mdl-js-spinner is-active"></div>
                 </div>
-                <div style="width: 20%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1000; display: flex; justify-content: center; align-items: center;" id="nav-left" onclick="handlePage(-1)">
-                  <i class="material-icons" style="font-weight: bold; text-align: center; color: white; display: none;">arrow_back_ios</i>
-                </div>
                 <img style="width:100%; min-height: 5rem;" id="orig_img">
               </div>
               <div class="mdl-cell mdl-cell--6-col mdl-cell--6-col-tablet mdl-cell--6-col-desktop" style="text-align: center; position: relative;">
-                <div style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 500; padding: 0; margin: 0;">
-                  <div style="width: 100%; height: 100%; position: relative; padding: 0; margin: 0;" id="bb_layer_sub"></div>
+                <div style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; padding: 0; margin: 0;">
+                  <div style="width: 100%; height: 100%; position: relative; padding: 0; margin: 0; z-index: 700;" id="bb_layer_sub">
+                  </div>
                 </div>
                 <div id="download_sub" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 600; padding: 0; margin: 0; background-color: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center;">
                   <div class="mdl-spinner mdl-spinner--single-color mdl-js-spinner is-active"></div>
-                </div>
-                <div style="width: 20%; height: 100%; position: absolute; top: 0; right: 0; z-index: 1000; display: flex; justify-content: center; align-items: center;" id="nav-right" onclick="handlePage(1)">
-                  <i class="material-icons" style="font-weight: bold; text-align: center; color: white; display: none;">arrow_forward_ios</i>
                 </div>
                 <img style="width:100%; min-height: 5rem;" id="sub_img">
               </div>
