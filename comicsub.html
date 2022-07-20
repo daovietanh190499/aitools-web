@@ -389,17 +389,13 @@
         
         let fonts = JSON.parse(window.localStorage.getItem('fonts'))
         fonts.push(id)
-        document.getElementById('list_font').innerHTML += `
-          <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
-            <div style="font-family: '${id}'; display: flex; justify-content: center; align-items: center; width: 100%; padding: 1rem; line-height: 100%;">${id} - The quick brown fox jump over the lazy dog</div>
-          </div>
-        `
         window.localStorage.setItem('fonts', JSON.stringify(fonts))
-        let options = ""
+        let options = `<a style="cursor: pointer;" id="label_adding_font"><label for="adding_font">+ Thêm font</label></a>`
         for(let i = 0; i < fonts.length; i++) {
           options += `<a style="font-family: '${fonts[i]}'; cursor: pointer;" onclick="handleSelectFont(this)">${fonts[i]}</a>`
         }
         document.getElementById('list_font_select').innerHTML = options
+        document.getElementById("list_font_select").classList.toggle("show");
       }
       reader.readAsDataURL(files[0])
     }
@@ -647,6 +643,7 @@
                 <div class="dropdown">
                   <button onclick="showListFont()" class="mdl-button mdl-js-button" style="font-family: 'mto-astro'; font-size: 0.8rem;" id="current_font">mto-astro</button>
                   <div id="list_font_select" class="dropdown-content">
+                    <a style="cursor: pointer;" id="label_adding_font"><label for="adding_font">+ Thêm font</label></a>
                     <a style="font-family: 'mto-astro'; cursor: pointer;" onclick="handleSelectFont(this)">mto-astro</a>
                   </div>
                 </div>
@@ -666,17 +663,8 @@
           </div>
         </div>
 
-        <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
-          <div style="width:100%" id="list_font">
-            <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
-              <div style="font-family: 'mto-astro'; display: flex; justify-content: center; align-items: center; width: 100%; padding: 1rem; line-height: 100%;">MTO_astro - The quick brown fox jump over the lazy dog</div>
-            </div>
-          </div>
-          <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop mdl-grid" style="display: flex; justify-content: center; align-items: center">
-            <div style="margin-right: 1rem;">Thêm Font:</div>
-            <input type="file" onchange="base64convert(this.files, this.value)" accept=".ttf, .woff">
-          </div>
-        </div>
+       
+        <input type="file" onchange="base64convert(this.files, this.value)" accept=".ttf, .woff" id="adding_font" style="display: none;">
 
         <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
           <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
