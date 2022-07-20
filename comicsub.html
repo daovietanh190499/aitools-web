@@ -130,7 +130,7 @@
           document.getElementById("num_total").innerText = res['result']['num_img'];
           document.getElementById("page").max = res['result']['num_img'];
           document.getElementById("page").value = 1
-          downloadSub().then(res => showResult())
+          downloadSub().then(res => {showResult(); showCurrent(0, 0)})
         })
       })
     }
@@ -162,6 +162,12 @@
           }).then(response => {
             return response.json()
           }).then(res => {
+            for (const item in res['result']['subs']) {
+              for(let i = 0; i < res['result']['subs'][item].length; i ++) {
+                res['result']['subs'][item][i].push(15)
+                res['result']['subs'][item][i].push('mto-astro')
+              }
+            }
             window.localStorage.setItem("subs", JSON.stringify(res['result']['subs']))
             document.getElementById("download_orig").style.setProperty("display", "none");
             document.getElementById("download_sub").style.setProperty("display", "none");
@@ -170,7 +176,7 @@
       })
     }
 
-    function showResult(id, changeFont=false, changeSub=false) {
+    function showResult(id) {
       let img_id = document.getElementById("page").value - 1;
       if (id == 0 || id) {
         img_id = id
@@ -191,13 +197,9 @@
         var ratioHeight = height/naturalHeight;
         var str = "";
         var str1 = "";
-        var sub_str = "";
-        let font = window.localStorage.getItem('font')
         for(let i=0; i < sub.length; i++) {
-          var font_size = ratioWidth*15/1.5;
-          if (changeFont && sub[i].length == 5) {
-            font_size = ratioWidth*parseFloat(sub[i][4])/1.5
-          }
+          var font = sub[i][5]
+          var font_size = ratioWidth*parseFloat(sub[i][4])/1.5
           var coord = sub[i][0].split(' ')
           var div_width = (parseInt(coord[2]) - parseInt(coord[0]))*ratioWidth
           var div_height = (parseInt(coord[3]) - parseInt(coord[1]))*ratioHeight
@@ -208,53 +210,81 @@
             contentEditable="true"
             style="width:${div_width}px; 
               height:${div_height}px; 
-              top:${top}px; left:${left}px; 
+              top:${top}px; left:${left}px;
               font-size:${font_size}px; font-weight:bolder; text-transform: uppercase; font-family: '${font}';
-              line-height:100%;
+              line-height:110%;
               display:flex; justify-content:center; align-items: center;
               text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;"
-            oninput="changeSub(${img_id}, ${i}, this.innerText, false)"
+            oninput="changeSub(${img_id}, ${i}, this, false)"
+            onclick="showCurrent(${img_id}, ${i}, this)"
             >
               ${sub[i][3]}
             </div>`
-          sub_str += `
-            <tr>
-              <td style="width:26%">${sub[i][1]}</td>
-              <td style="width:27%">${sub[i][2]}</td>
-              <td style="width:27%">${sub[i][3]}</td>
-              <td style="width:10%"><input min=1 max=10000 value=${sub[i].length == 5 ? sub[i][4] : 15} 
-                type="number" oninput="changeFont(${img_id}, ${i}, this.value)"></td>
-            </tr>`
         }
         document.getElementById("bb_layer").innerHTML = str
-        if(!changeSub){
-          document.getElementById("bb_layer_sub").innerHTML = str1
-        }
-        if(!changeFont){
-          document.getElementById("sub_text").innerHTML = sub_str
-        }
+        document.getElementById("bb_layer_sub").innerHTML = str1
       }
+    }
+
+    function handleSelectFont(ele) {
+      let curent_font = document.getElementById("current_font")
+      current_font.innerText = ele.innerText
+      var event = new Event('change');
+      current_font.dispatchEvent(event);
+    }
+
+    function showCurrent(img_id, i, ele) {
+      if (ele) {
+        if (document.querySelector(".border-dashed-3"))
+          document.querySelector(".border-dashed-3").classList.remove("border-dashed-3")
+        ele.classList.toggle("border-dashed-3")
+      }
+      let current_orig_text = document.getElementById("current_orig_text")
+      let current_engsub = document.getElementById("current_engsub")
+      let current_vietsub = document.getElementById("current_vietsub")
+      let curent_font = document.getElementById("current_font")
+      let current_fontsize = document.getElementById("current_fontsize")
+      let all_sub = JSON.parse(window.localStorage.getItem("subs"))
+      let sub = all_sub["temp_" + pad(img_id, 6)]
+      current_orig_text.innerText = sub[i][1]
+      current_engsub.innerText = sub[i][2]
+      current_vietsub.innerText = sub[i][3]
+      current_fontsize.value = sub[i][4]
+      curent_font.innerText = sub[i][5]
+      current_vietsub.style.fontFamily = `'${sub[i][5]}'`
+      current_font.style.fontFamily = `'${sub[i][5]}'`
+      current_vietsub.oninput= () => changeSub(img_id, i, current_vietsub, true)
+      current_fontsize.oninput= () => changeFontSize(img_id, i, current_fontsize)
+      curent_font.onchange = () => changeFont(img_id, i, curent_font)
     }
 
     function changeSub(img_id, i, sub_str, is_regenerate) {
       let all_sub = JSON.parse(window.localStorage.getItem("subs"))
       let sub = all_sub["temp_" + pad(img_id, 6)]
-      sub[i][3] = sub_str
+      sub[i][3] = sub_str.innerText
       all_sub["temp_" + pad(img_id, 6)] = sub
       window.localStorage.setItem("subs", JSON.stringify(all_sub))
-      showResult(undefined, is_regenerate, !is_regenerate)
+      if (is_regenerate)
+        showResult(undefined)
     }
 
-    function changeFont(img_id, i, size) {
+    function changeFontSize(img_id, i, current_fontsize) {
       let all_sub = JSON.parse(window.localStorage.getItem("subs"))
       let sub = all_sub["temp_" + pad(img_id, 6)]
-      if(sub[i].length == 4) {
-        sub[i].push(size)
-      }
-      sub[i][4] = size
+      sub[i][4] = current_fontsize.value
       all_sub["temp_" + pad(img_id, 6)] = sub
       window.localStorage.setItem("subs", JSON.stringify(all_sub))
-      showResult(undefined, true, false)
+      showResult(undefined)
+    }
+
+    function changeFont(img_id, i, current_font) {
+      let all_sub = JSON.parse(window.localStorage.getItem("subs"))
+      let sub = all_sub["temp_" + pad(img_id, 6)]
+      sub[i][5] = current_font.innerText
+      all_sub["temp_" + pad(img_id, 6)] = sub
+      window.localStorage.setItem("subs", JSON.stringify(all_sub))
+      showResult(undefined)
+      showCurrent(img_id, i)
     }
 
     function downloadResult() {
@@ -315,8 +345,8 @@
       canvas.height = img.naturalHeight
       ctx.drawImage(img, 0, 0);
       let sub = JSON.parse(window.localStorage.getItem("subs"))["temp_" + pad(img_id, 6)];
-      let font = window.localStorage.getItem('font')
       for(let i = 0; i < sub.length; i ++) {
+        var font = sub[i][5]
         var coord = sub[i][0].split(' ')
         ctx.font=`bolder ${sub[i][4]/1.5}px '${font}'`;
         ctx.textAlign = "center";
@@ -325,7 +355,7 @@
         var ymin = parseInt(coord[1]);
         var xmax = parseInt(coord[2]);
         var ymax = parseInt(coord[3]);
-        var lineheight = sub[i][4]/1.5;
+        var lineheight = (sub[i][4]/1.5)*1.1;
         var d_height = lineheight*lines.length/2;
         for (var j = 0; j<lines.length; j++)
             drawStroked(ctx, lines[j], (xmax + xmin)/2, (ymax + ymin - (lines.length - 1)*lineheight)/2 + (j*lineheight) );
@@ -336,12 +366,19 @@
       link.click();
     }
 
-    function base64convert (files) {
+    function base64convert (files, fullPath) {
       const reader = new FileReader()
       reader.onload = (e) => {
-        console.log(e.target.result.split(',')[1])
         var newStyle = document.createElement('style');
         var id = uuid.v4()
+        if (fullPath) {
+          var startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
+          var id = fullPath.substring(startIndex);
+          if (id.indexOf('\\') === 0 || id.indexOf('/') === 0) {
+              id = id.substring(1);
+          }
+          id = id.split('.')[0]
+        }
         newStyle.appendChild(document.createTextNode("\
           @font-face {\
               font-family: '" + id + "';\
@@ -349,16 +386,43 @@
           }\
         "));
         document.head.appendChild(newStyle);
-        document.getElementById("font_preview").style.fontFamily = `'${id}'`
-        window.localStorage.setItem('font', id)
-        if(document.getElementById("saved_img").innerHTML != "")
-          showResult(undefined, true, false)
+        
+        let fonts = JSON.parse(window.localStorage.getItem('fonts'))
+        fonts.push(id)
+        document.getElementById('list_font').innerHTML += `
+          <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+            <div style="font-family: '${id}'; display: flex; justify-content: center; align-items: center; width: 100%; padding: 1rem; line-height: 100%;">${id} - The quick brown fox jump over the lazy dog</div>
+          </div>
+        `
+        window.localStorage.setItem('fonts', JSON.stringify(fonts))
+        let options = ""
+        for(let i = 0; i < fonts.length; i++) {
+          options += `<a style="font-family: '${fonts[i]}'; cursor: pointer;" onclick="handleSelectFont(this)">${fonts[i]}</a>`
+        }
+        document.getElementById('list_font_select').innerHTML = options
       }
       reader.readAsDataURL(files[0])
     }
 
+    function showListFont() {
+      document.getElementById("list_font_select").classList.toggle("show");
+    }
+
+    window.onclick = function(event) {
+      if (!event.target.matches('#current_font')) {
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        var i;
+        for (i = 0; i < dropdowns.length; i++) {
+          var openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+          }
+        }
+      }
+    }
+
     function initApp() {
-      window.localStorage.setItem('font', 'mto-astro')
+      window.localStorage.setItem('fonts', JSON.stringify(['mto-astro']))
 
       firebase.auth().getRedirectResult().then(function(result) {
         var user = result.user;
@@ -531,7 +595,7 @@
 
 
         <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
-          <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop" style="padding: 1rem; position: relative;">
+          <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop" style="padding: 1rem; position: relative; display: flex; align-items: flex-start;">
             <div style="width:100%; padding: 0; margin: 0;" class="mdl-grid">
               <div class="mdl-cell mdl-cell--5-col mdl-cell--5-col-tablet mdl-cell--5-col-desktop" style="text-align: center; position: relative;">
                 <div style="width:20%; height: 100%; position: absolute; left: 0; cursor: pointer;" id="nav-left" onclick="handlePage(-1)">
@@ -569,6 +633,28 @@
                 <img style="width:100%; min-height: 5rem;" id="sub_img">
               </div>
             </div>
+            <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop mdl-grid border-dashed-4" style="padding: 0; position: sticky; bottom: 0; min-height: 5rem; background-color: white; z-index: 2000;">
+              <div style="width: calc(20% - 2rem); margin: 1rem; line-height: 110%; font-size: 0.8rem; display: flex; justify-content: center; align-items: center;" id="current_orig_text">
+
+              </div>
+              <div style="width: calc(20% - 2rem); margin: 1rem; line-height: 110%; font-size: 0.8rem; display: flex; justify-content: center; align-items: center;" id="current_engsub">
+
+              </div>
+              <div contentEditable="true" style="width: calc(20% - 2rem); margin: 1rem; line-height: 110%; font-size: 0.8rem; display: flex; justify-content: center; align-items: center;" id="current_vietsub">
+
+              </div>
+              <div style="width: calc(20% - 2rem); margin: 1rem; line-height: 110%;">
+                <div class="dropdown">
+                  <button onclick="showListFont()" class="mdl-button mdl-js-button" style="font-family: 'mto-astro'; font-size: 0.8rem;" id="current_font">mto-astro</button>
+                  <div id="list_font_select" class="dropdown-content">
+                    <a style="font-family: 'mto-astro'; cursor: pointer;" onclick="handleSelectFont(this)">mto-astro</a>
+                  </div>
+                </div>
+              </div>
+              <div style="width: calc(10% - 2rem); margin: 1rem; line-height: 110%; display: flex; justify-content: center; align-items: center;">
+                <input min=1 max=10000 value=15 type="number" id="current_fontsize">
+              </div>
+            </div>
           </div>
         </div>
 
@@ -581,29 +667,15 @@
         </div>
 
         <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
-          <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop mdl-grid">
-            <div style="display: flex; justify-content: center; align-items: center; margin-right: 1rem;">Đổi Font:</div>
-            <input type="file" onchange="base64convert(this.files)" accept=".ttf, .woff">
-            <div style="font-family: 'mto-astro'; display: flex; justify-content: center; align-items: center; margin-left: 5rem;" id="font_preview">The quick brown fox jump over the lazy dog</div>
+          <div style="width:100%" id="list_font">
+            <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+              <div style="font-family: 'mto-astro'; display: flex; justify-content: center; align-items: center; width: 100%; padding: 1rem; line-height: 100%;">MTO_astro - The quick brown fox jump over the lazy dog</div>
+            </div>
           </div>
-        </div>
-
-        <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
-          <!-- <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop"> -->
-          <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" style="height: 100%; width: 100%; margin: 8px;" id="spec">
-            <thead>
-              <tr>
-                <th class="mdl-data-table__cell--non-numeric">Văn bản gốc</th>
-                <th>Eng sub</th>
-                <th>Vietsub</th>
-                <th>Font size</th>
-              </tr>
-            </thead>
-            <tbody id="sub_text">
-              
-            </tbody>
-          </table>
-          <!-- </div> -->
+          <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop mdl-grid" style="display: flex; justify-content: center; align-items: center">
+            <div style="margin-right: 1rem;">Thêm Font:</div>
+            <input type="file" onchange="base64convert(this.files, this.value)" accept=".ttf, .woff">
+          </div>
         </div>
 
         <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
