@@ -251,6 +251,7 @@
       current_vietsub.innerText = sub[i][3]
       current_fontsize.value = sub[i][4]
       curent_font.innerText = sub[i][5]
+      current_vietsub.contentEditable = true
       current_vietsub.style.fontFamily = `'${sub[i][5]}'`
       current_font.style.fontFamily = `'${sub[i][5]}'`
       current_vietsub.oninput= () => changeSub(img_id, i, current_vietsub, true)
@@ -636,7 +637,7 @@
               <div style="width: calc(20% - 2rem); margin: 1rem; line-height: 110%; font-size: 0.8rem; display: flex; justify-content: center; align-items: center;" id="current_engsub">
 
               </div>
-              <div contentEditable="true" style="width: calc(20% - 2rem); margin: 1rem; line-height: 110%; font-size: 0.8rem; display: flex; justify-content: center; align-items: center;" id="current_vietsub">
+              <div style="width: calc(20% - 2rem); margin: 1rem; line-height: 110%; font-size: 0.8rem; display: flex; justify-content: center; align-items: center;" id="current_vietsub">
 
               </div>
               <div style="width: calc(20% - 2rem); margin: 1rem; line-height: 110%;">
