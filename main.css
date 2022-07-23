@@ -405,3 +405,8 @@
   .dropdown a:hover {background-color: #ddd;}
   
   .show {display: block;}
+
+  #label_adding_font {
+    width: 100%;
+    height: 100%;
+  }
