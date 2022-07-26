@@ -104,6 +104,18 @@
                   document.getElementById('quickstart-account-status').innerHTML = `<span class="mdl-color-text--red" style="font-weight: bold;"> Chưa kích hoạt </span>`
                 }
             })
+            fetch(endpoint + "generate_token", {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'token': idToken
+            }})
+            .then(res => res.json())
+            .then(res => {
+                if('result' in res) {
+                  document.getElementById("access_token").innerText = "Access Token: " + res['result']['custom_token'].split("'")[1]
+                }
+            })
           })
           
           document.getElementById('quickstart-sign-in-status').textContent = 'Đã đăng nhập';
@@ -198,6 +210,12 @@
             <div class="mdl-shadow--2dp mdl-cell mdl-cell--3-col mdl-cell--12-col-tablet mdl-cell--3-col-desktop" style="cursor: pointer; text-align: center; height: 100%; line-height: 20px;" onclick="redirect('idimage.html')">
                 Làm ảnh thẻ
             </div>
+        </div>
+      </div>
+
+      <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+        <div class="mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop" id="access_token" style="line-height: 20px; word-wrap:break-word; padding:1rem">
+          Access Token: 
         </div>
       </div>
        
