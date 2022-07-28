@@ -104,11 +104,10 @@
                   document.getElementById('quickstart-account-status').innerHTML = `<span class="mdl-color-text--red" style="font-weight: bold;"> Chưa kích hoạt </span>`
                 }
             })
-            fetch(endpoint + "generate_token", {
+            fetch(endpoint + "generate_token/" + uid, {
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
-                'token': idToken
+                'Content-Type': 'application/json'
             }})
             .then(res => res.json())
             .then(res => {
