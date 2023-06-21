@@ -105,7 +105,7 @@
 </head>
 <body>
     <h1 style="margin: 0;"> 
-        <select class="title-menu" id="title-menu">
+        <select class="title-menu" id="title-menu" onchange="onMenuChange()">
             <option value="compression">Image Compression Tool</option>
             <option value="matting">People Matting Tool</option>
             <option value="crop_image">ID Image Crop Tool</option>
@@ -119,7 +119,7 @@
     <div class="header">
         <label for="upload" class="btn">upload 🎩</label>
         <input type="file" accept="image/jpg,image/jpeg,image/png" id="upload" onchange="onImageUpload()" />
-        <div class="btn" onClick={onDownload}>download ✨</div>
+        <div class="btn" onclick="download()">download ✨</div>
     </div>
 
     <div class="preview">
@@ -141,7 +141,8 @@
 
     <script>
         const endpoint = "https://dohubapps.com/user/daovietanh190499/8000/"
-        function onImageUpload(e) {
+
+        function query() {
             const file = document.getElementById("upload").files[0]
             const uploadSrc = URL.createObjectURL(file)
             document.getElementById("before").src = uploadSrc
@@ -162,6 +163,26 @@
             .catch(res => {
                 document.getElementById('after').src = "thumbnail.png"
             })
+        }
+
+        function onImageUpload(e) {
+            query()
+        }
+
+        function onMenuChange() {
+            if (document.getElementById("before").src !== "thumbnail.png") {
+                query()
+            }
+        }
+
+        function download() {
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = document.getElementById("after").src;
+            a.download = "tải xuống";
+            document.body.appendChild(a);
+            a.click();
+            a.remove()
         }
     </script>
 </body>
