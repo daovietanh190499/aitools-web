@@ -147,13 +147,20 @@
             document.getElementById("before").src = uploadSrc
             var data = new FormData()
             data.append('file', file)
+            document.getElementById('after').src = "loading.gif"
             fetch(endpoint + document.getElementById("title-menu").value, {
                 method: 'POST',
                 body: data
             })
-            .then(res => res.json())
+            .then(res => {
+                document.getElementById('after').src = "thumbnail.png"
+                return res.json()
+            })
             .then(res => {
                 document.getElementById('after').src = "data:image/jpeg;base64," + res['images'][0]
+            })
+            .catch(res => {
+                document.getElementById('after').src = "thumbnail.png"
             })
         }
     </script>
