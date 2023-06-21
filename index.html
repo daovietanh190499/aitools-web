@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="icon.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap');
+        * {
+        box-sizing: border-box;
+        }
+        html {
+        /* font-size: 100vmax / 1600 * 100; */
+        @media (max-width: 992px) {
+            font-size: 60px !important;
+        }
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            background: radial-gradient(circle, #ccc 10%, #0000 10%) repeat center / 25px 25px;
+            font-family: 'Kanit', sans-serif;
+            user-select: none;
+            text-align: center;
+            padding: 0.5rem 1rem 1rem;
+        }
+
+        .title-menu {
+            font-family: 'Kanit', sans-serif;
+            border: none;
+            font-size: 1em;
+            background-color: transparent;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .title-menu {
+            outline: none;
+        }
+
+        .header {
+            margin: 1rem auto;
+        }
+
+        .compress-text {
+            margin-top: 0.2rem;
+        }
+
+        .compress-text span {
+            color: indianred;
+        }
+
+        .btn {
+        display: inline-block;
+        margin: 0 0.5rem;
+        padding: 0.2rem;
+        width: 10rem;
+        border-radius: 5px;
+        border: 2px solid #333;
+        background-color: #f8f7f3;
+        box-shadow: 2px 2px 0 2px #333;
+        cursor: pointer;
+        }
+
+        input[type="file"] {
+        display: none;
+        }
+
+        .preview{
+            margin-top: 1rem;
+            min-width: 10rem;
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: 1rem;
+            border: 2px solid #000;
+            border-radius: 8px;
+            background-color: #fff;
+        }
+        
+        .preview .img-box {
+            flex: 1;
+        }
+        .preview .title {
+            margin-bottom: 0.5rem;
+        }
+        .preview img {
+            display: block;
+            min-width: 4.5rem;
+            background-color: #eee;
+            border-radius: 5px;
+            width: 20vw;
+        }
+        .hint {
+            margin-top: 0.5rem;
+            color: #999;
+            /* font-size: 0.9em; */
+        }
+    </style>
+    <title>AI Tools</title>
+</head>
+<body>
+    <h1 style="margin: 0;"> 
+        <select class="title-menu" id="title-menu">
+            <option value="compression">Image Compression Tool</option>
+            <option value="matting">People Matting Tool</option>
+            <option value="crop_image">ID Image Crop Tool</option>
+            <option value="white_balance">White Balance Tool</option>
+            <option value="rotate_by_eye">Rotate Image by Eye Tool</option>
+            <option value="superesolution">Supperesolution Tool</option>
+            <option value="sub">Manga Subtitle Tool</option>
+        </select> 
+    </h1>
+
+    <div class="header">
+        <label for="upload" class="btn">upload 🎩</label>
+        <input type="file" accept="image/jpg,image/jpeg,image/png" id="upload" onchange="onImageUpload()" />
+        <div class="btn" onClick={onDownload}>download ✨</div>
+    </div>
+
+    <div class="preview">
+        <div class="img-box">
+            <div class="title">
+            Before
+            </div>
+            <img class="preview-before" id="before" src="thumbnail.png" alt="" />
+        </div>
+        <div class="img-box">
+            <div class="title">
+            After
+            </div>
+            <img class="preview-after" id="after" src="thumbnail.png" alt="" />
+        </div>
+    </div>
+
+    <div class="hint">*support PNG and JPG file</div>
+
+    <script>
+        const endpoint = "https://dohubapps.com/user/daovietanh190499/8000/"
+        function onImageUpload(e) {
+            const file = document.getElementById("upload").files[0]
+            const uploadSrc = URL.createObjectURL(file)
+            document.getElementById("before").src = uploadSrc
+            var data = new FormData()
+            data.append('file', file)
+            fetch(endpoint + document.getElementById("title-menu").value, {
+                method: 'POST',
+                body: data
+            })
+            .then(res => res.json())
+            .then(res => {
+                document.getElementById('after').src = "data:image/jpeg;base64," + res['images'][0]
+            })
+        }
+    </script>
+</body>
+</html>
