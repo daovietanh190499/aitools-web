@@ -10,12 +10,6 @@
         * {
         box-sizing: border-box;
         }
-        html {
-        /* font-size: 100vmax / 1600 * 100; */
-        @media (max-width: 992px) {
-            font-size: 60px !important;
-        }
-        }
         body {
             display: flex;
             justify-content: center;
@@ -27,6 +21,7 @@
             user-select: none;
             text-align: center;
             padding: 0.5rem 1rem 1rem;
+            width: 100%
         }
 
         .title-menu {
@@ -90,15 +85,29 @@
         }
         .preview img {
             display: block;
-            min-width: 4.5rem;
+            min-width: 10vw;
             background-color: #eee;
             border-radius: 5px;
-            width: 20vw;
+            max-width: 30vw;
         }
         .hint {
             margin-top: 0.5rem;
             color: #999;
             /* font-size: 0.9em; */
+        }
+
+        @media screen and (max-width: 992px) {
+            .btn {
+                margin-top: 1rem;
+            }
+            .preview {
+                flex-direction: column;
+            }
+            .preview img {
+                width: 100%;
+                margin-right: 0;
+                max-width: none;
+            }
         }
     </style>
     <title>AI Tools</title>
@@ -107,11 +116,11 @@
     <h1 style="margin: 0;"> 
         <select class="title-menu" id="title-menu" onchange="onMenuChange()">
             <option value="compression">Image Compression Tool</option>
-            <option value="matting">People Matting Tool</option>
+            <option value="matting" selected>People Matting Tool</option>
             <option value="crop_image">ID Image Crop Tool</option>
             <option value="white_balance">White Balance Tool</option>
-            <option value="rotate_by_eye">Rotate Image by Eye Tool</option>
-            <option value="superesolution">Supperesolution Tool</option>
+            <option value="rotate_by_eye">Align Image by Eye Tool</option>
+            <option value="superesolution">Superesolution Tool</option>
             <option value="sub">Manga Subtitle Tool</option>
         </select> 
     </h1>
@@ -159,6 +168,9 @@
             })
             .then(res => {
                 document.getElementById('after').src = "data:image/jpeg;base64," + res['images'][0]
+                if (document.getElementById("title-menu").value === "sub") {
+                    
+                }
             })
             .catch(res => {
                 document.getElementById('after').src = "thumbnail.png"
