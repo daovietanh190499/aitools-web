@@ -7,6 +7,10 @@
     <link rel="icon" href="icon.png">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap');
+        @font-face {
+            font-family: MTO-astro-city;
+            src: url('MTO\ Astro\ City.ttf');
+        }
         * {
         box-sizing: border-box;
         }
@@ -83,8 +87,18 @@
         .preview .title {
             margin-bottom: 0.5rem;
         }
-        .preview img {
+        .preview .wrap-img {
             display: block;
+            position: relative;
+        }
+        .wrap-img .text-box{
+            z-index: 1000;
+            display: block;
+            position: absolute;
+            font-family: 'MTO-astro-city', Courier, monospace;
+        }
+        .preview img {
+            width: 100%;
             min-width: 10vw;
             background-color: #eee;
             border-radius: 5px;
@@ -103,7 +117,7 @@
             .preview {
                 flex-direction: column;
             }
-            .preview img {
+            .preview .wrap-img {
                 width: 100%;
                 margin-right: 0;
                 max-width: none;
@@ -136,13 +150,17 @@
             <div class="title">
             Before
             </div>
-            <img class="preview-before" id="before" src="thumbnail.png" alt="" />
+            <div class="wrap-img">
+                <img class="preview-before" id="before" src="thumbnail.png" alt="" />
+            </div>
         </div>
         <div class="img-box">
             <div class="title">
             After
             </div>
-            <img class="preview-after" id="after" src="thumbnail.png" alt="" />
+            <div class="wrap-img" id="wrap-result">
+                <img class="preview-after" id="after" src="thumbnail.png" alt="" />
+            </div>
         </div>
     </div>
 
@@ -152,6 +170,7 @@
         const endpoint = "https://dohubapps.com/user/daovietanh190499/8000/"
 
         function query() {
+            document.getElementById("wrap-result").innerHTML = `<img class="preview-after" id="after" src="thumbnail.png" alt="" />`
             const file = document.getElementById("upload").files[0]
             const uploadSrc = URL.createObjectURL(file)
             document.getElementById("before").src = uploadSrc
@@ -169,10 +188,38 @@
             .then(res => {
                 document.getElementById('after').src = "data:image/jpeg;base64," + res['images'][0]
                 if (document.getElementById("title-menu").value === "sub") {
-                    
+                    lines = res['sub_text'].split('\n')
+                    let text_boxes = ""
+                    let x1, y1, width, height
+                    let image_width = document.getElementById('before').clientWidth
+                    let real_width = document.getElementById('before').naturalWidth
+                    let ratio = image_width/real_width
+                    let area
+                    for (line in lines) {
+                        if (line %4 == 2) {
+                            let character_area = area/(lines[line].length)
+                            text_boxes += `<div class="text-box" style="top:${y1*ratio}px; left:${x1*ratio}px; width:${width*ratio}px; height:${height*ratio}px; font-size:${Math.sqrt(character_area*0.7)}px">${lines[line]}</div>`
+                            x1 = 0
+                            y1 = 0
+                            width = 0
+                            height = 0
+                        }
+                        if (line %4 == 0) {
+                            let values = lines[line].split(' ')
+                            x1 = parseFloat(values[0])
+                            y1 = parseFloat(values[1])
+                            let x2 = parseFloat(values[2])
+                            let y2 = parseFloat(values[3])
+                            width = x2 - x1
+                            height = y2 - y1
+                            area = width*ratio*height*ratio
+                        }
+                    }
+                    document.getElementById("wrap-result").innerHTML = document.getElementById("wrap-result").innerHTML + text_boxes
                 }
             })
             .catch(res => {
+                console.log(res)
                 document.getElementById('after').src = "thumbnail.png"
             })
         }
@@ -182,9 +229,13 @@
         }
 
         function onMenuChange() {
-            if (document.getElementById("before").src !== "thumbnail.png") {
+            if (document.getElementById("before").src.slice(document.getElementById("before").src.length - 13, document.getElementById("before").src.length) !== "thumbnail.png") {
                 query()
             }
+            // } else {
+            //     document.getElementById("before").src = document.getElementById("title-menu").value
+            //     document.getElementById("after").src = document.getElementById("title-menu").value + "_result"
+            // }
         }
 
         function download() {
