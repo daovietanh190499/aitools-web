@@ -131,9 +131,9 @@
         <select class="title-menu" id="title-menu" onchange="onMenuChange()">
             <option value="compression">Image Compression Tool</option>
             <option value="matting" selected>People Matting Tool</option>
-            <option value="crop_image">ID Image Crop Tool</option>
+            <option value="crop_image">Face ID Image Cropping Tool</option>
             <option value="white_balance">White Balance Tool</option>
-            <option value="rotate_by_eye">Align Image by Eye Tool</option>
+            <option value="rotate_by_eye">Align Face Image by Eye Tool</option>
             <option value="superesolution">Superesolution Tool</option>
             <option value="sub">Manga Subtitle Tool</option>
         </select> 
@@ -238,7 +238,7 @@
             //     document.getElementById("after").src = document.getElementById("title-menu").value + "_result"
             // }
         }
-        
+
         document.getElementById("title-menu").value = window.localStorage.getItem("tool") ? window.localStorage.getItem("tool"): 'matting'
 
         function download() {
